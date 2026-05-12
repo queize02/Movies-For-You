@@ -3,47 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <link rel="icon" type="image/png" href="{{ url_for('static', filename='images/Movies.png') }}">
     <title>Admin - Ajouter un film</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='index.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='admin.css') }}">
     <style>
-        .admin-container {
-            max-width: 600px;
-            margin: 100px auto;
-            background: #141414;
-            padding: 30px;
-            border-radius: 8px;
-            border: 1px solid #333;
-        }
-        .admin-form {
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
-        }
-        .admin-form input {
-            padding: 12px;
-            background: #222;
-            border: 1px solid #444;
-            color: white;
-            border-radius: 4px;
-        }
-        .btn-submit {
-            background: #e50914;
-            color: white;
-            border: none;
-            padding: 15px;
-            font-weight: bold;
-            cursor: pointer;
-            border-radius: 4px;
-            transition: 0.3s;
-        }
-        .btn-submit:hover { background: #b20710; }
-        .back-link { color: #888; text-decoration: none; text-align: center; display: block; margin-top: 15px; }
+     
     </style>
 </head>
 <body>
     <div class="admin-container">
-        <h1 style="color: #e50914; margin-bottom: 20px;">Ajouter un nouveau film</h1>
-        <p style="margin-bottom: 20px; color: #ccc;">Entrez le titre exact, FlixMovies s'occupe de trouver l'affiche !</p>
+        <h1 >Ajouter un nouveau film</h1>
+        <p>Entrez le titre exact, FlixMovies s'occupe de trouver l'affiche !</p>
         
         <form class="admin-form" method="POST">
             <input type="text" name="titre" placeholder="Titre du film (ex: Avatar)" required>
