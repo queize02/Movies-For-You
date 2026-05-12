@@ -1,0 +1,99 @@
+/* Le conteneur qui centre tout au milieu de l'écran */
+body {
+    margin: 0;
+    padding: 0;
+    font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    background-color: #000000; /* Fond noir Netflix */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+}
+
+.container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 80vh;
+}
+
+/* La boîte qui contient le formulaire */
+.admin-box, .login-box {
+    width: 100%;
+    max-width: 450px; /* Largeur standard Netflix */
+    padding: 60px;
+    background-color: rgba(0, 0, 0, 0.75); /* Noir transparent */
+    border-radius: 8px;
+}
+
+.admin-box {
+    width: 100%;
+    max-width: 450px;
+    padding: 60px;
+    background-color: #0e0e0e;
+    border-radius: 8px;
+    box-sizing: border-box; /* Important pour que le padding ne déforme pas la boîte */
+}
+
+/* Les cases de saisie (Inputs) */
+input[type="text"], 
+input[type="password"] {
+    width: 100%;
+    height: 50px;
+    background: #333;
+    border: none;
+    border-radius: 4px;
+    color: white;
+    padding: 0 20px;
+    font-size: 16px;
+    margin-bottom: 16px;
+    box-sizing: border-box;
+}
+
+/* Le bouton (S'identifier / Ajouter) */
+button[type="submit"] {
+    width: 100%;
+    height: 50px;
+    background-color: #e50914;
+    color: white;
+    font-size: 16px;
+    font-weight: bold;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    margin-top: 24px;
+    transition: background 0.2s;
+}
+
+
+button[type="submit"]:hover {
+    background-color: #f6121d; /* Rouge un peu plus clair au survol */
+}
+
+
+h1{
+    margin-bottom: 28px;
+    color: white;
+    text-align: center;
+    font-weight: bold;
+}
+
+.switch-text {
+    text-align: center;
+    margin-top: 30px; /* Espace sous le bouton rouge */
+    color: #ffffff;
+    font-size: 16px;
+    width: 100%;
+    font-weight: bold;
+}
+
+.switch-text a {
+    color: rgb(255, 0, 0);
+    text-decoration: none;
+    font-weight: bold;
+}
+.switch-text a:hover {
+    text-decoration: underline;
+}
+

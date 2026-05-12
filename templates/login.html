@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Connexion - Movies For You</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='login.css') }}">
+</head>
+<body>
+    <div class="container">
+       <div class="admin-box">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, message in messages %}
+          <div class="alert {{ category }}">{{ message }}</div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+
+    {% if success %}
+    <script>
+        setTimeout(function() {
+            window.location.href = "{{ url_for('index') }}";
+        }, 2000); // Attend 2 secondes pour que l'utilisateur voit le message vert
+    </script>
+    {% endif %}
+</body>
+</html>
+    <h1>S'identifier</h1>
+    <form method="POST">
+        <input type="text" name="username" placeholder="Nom d'utilisateur" required>
+        <input type="password" name="password" placeholder="Mot de passe" required>
+        <button type="submit">S'identifier</button>
+    </form>
+    <p class="switch-text">Pas encore membre ? <a href="/register">Créer un compte</a></p>
+</div>
+    </div>
+</body>
+</html>

@@ -1,0 +1,159 @@
+/* --- RESET COMPLET --- */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box; /* Important pour que les paddings ne cassent pas la largeur */
+}
+
+html, body {
+    width: 100%;
+    height: 100%;
+    background-color: #050505; /* Noir profond type Netflix */
+    color: white;
+    font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    overflow-x: hidden;
+}
+
+/* --- NAVBAR (Barre de navigation) --- */
+.navbar {
+    background-color: #000000;
+    padding: 15px 30px;
+    position: fixed;
+    top: 0;
+    width: 100%;
+    z-index: 1000;
+    border-bottom: 1px solid #333;
+}
+
+.navbar nav ul {
+    display: flex;          /* ALIGNEMENT HORIZONTAL */
+    align-items: center;    /* Centrage vertical */
+    list-style: none;
+    gap: 20px;              /* Espace entre les onglets */
+}
+
+.navbar nav ul li a {
+    color: white;
+    text-decoration: none;
+    font-weight: 500;
+    font-size: 0.9rem;
+    transition: 0.3s;
+}
+
+.navbar nav ul li a:hover {
+    color: #b3b3b3;
+}
+
+/* Bouton spécifique pour l'Admin (+ Ajouter un film) */
+.navbar nav ul li a[href="/admin_ajouter"] {
+    background-color: #e50914;
+    padding: 8px 15px;
+    border-radius: 4px;
+    font-weight: bold;
+}
+
+/* Pousse le bouton de déconnexion vers la droite */
+.logout-item {
+    margin-left: auto;
+}
+
+.logout-link {
+    color: #888 !important;
+}
+
+/* --- LOADER (Écran de chargement) --- */
+#loader {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: #050505;
+    z-index: 9999;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    transition: opacity 0.7s ease;
+    border-radius: 4px;
+}
+
+.loader-content {
+    position: relative;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 200px;
+    height: 200px;
+    margin-bottom: 20px;
+}
+
+.loader-logo {
+    width: 150px;           /* Ajuste la taille si besoin */
+    height: 150px;          /* Doit être identique à la largeur */
+    border-radius: 50%;     /* Rend l'image parfaitement ronde */
+    object-fit: cover;      /* Empêche de déformer le pop-corn à l'intérieur */
+    border: 3px solid #000000; /* Ajoute un cercle rouge "Netflix" autour (optionnel) */
+    background-color: #000; /* Assure un fond noir si ton image est transparente */
+}
+
+.spinner {
+    width: 180px;
+    height: 180px;
+    border: 4px solid rgba(229, 9, 20, 0.1);
+    border-top: 4px solid #e50914;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    position: absolute;
+    z-index: 1;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* --- CATALOGUE / GRILLE --- */
+.container {
+    padding: 100px 4% 40px 4%; /* Padding top pour compenser la navbar fixe */
+}
+
+.grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 20px;
+}
+
+.movie-card {
+    background: #141414;
+    border-radius: 8px;
+    overflow: hidden;
+    transition: transform 0.3s;
+}
+
+.movie-card:hover {
+    transform: scale(1.05);
+}
+
+.movie-card img {
+    width: 100%;
+    height: auto;
+}
+
+/* --- SCROLLBAR --- */
+::-webkit-scrollbar {
+    width: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: #050505;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #333;
+    border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #e50914;
+}
