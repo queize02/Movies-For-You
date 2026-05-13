@@ -40,13 +40,18 @@ def login():
     if request.method == 'POST':
         username = request.form['username']
         password = hashlib.sha256(request.form['password'].encode()).hexdigest()
+        
         with sqlite3.connect(DB_USERS) as conn:
             user = conn.execute('SELECT * FROM users WHERE username = ? AND password = ?', (username, password)).fetchone()
+        
         if user:
             session['user'] = username
-            return redirect(url_for('index'))
-        flash("Identifiants incorrects")
-    return render_template('login.html')
+            # On renvoie la page login avec un paramètre 'success'
+            return render_template('login.html', success=True)
+        else:
+            flash("Identifiants incorrects")
+            
+    return render_template('login.html', success=False)
 
 @app.route('/register', methods=['GET', 'POST'])
 def register():
