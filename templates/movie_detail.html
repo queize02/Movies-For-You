@@ -1,47 +1,19 @@
 <!DOCTYPE html>
-<html lang="fr">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <title>{{ movie[1] }} - MFY</title>
-    <style>
-        body { background-color: #000; color: white; margin: 0; font-family: 'Segoe UI', sans-serif; overflow-x: hidden; }
-        .hero {
-            position: relative; height: 80vh; display: flex; align-items: center; padding: 0 5%;
-            background: linear-gradient(to right, #000 15%, transparent 100%), url('{{ movie[2] }}') no-repeat center top/cover;
-        }
-        .content { max-width: 700px; z-index: 2; }
-        .title { font-size: 4.5rem; margin: 0; text-transform: uppercase; line-height: 1; }
-        .meta { margin: 20px 0; font-weight: bold; color: #ccc; }
-        .meta span { border: 1px solid #666; padding: 2px 8px; border-radius: 4px; margin-right: 10px; font-size: 0.9rem; }
-        .desc { font-size: 1.3rem; line-height: 1.5; margin-bottom: 30px; text-shadow: 1px 1px 5px black; }
-        .btn-play {
-            background-color: white; color: black; padding: 15px 40px; border-radius: 5px;
-            font-size: 1.3rem; font-weight: bold; text-decoration: none; transition: 0.3s;
-        }
-        .btn-play:hover { background-color: #e50914; color: white; }
-        .video-container { background: #000; padding: 50px 5%; text-align: center; }
-        iframe, video { width: 100%; max-width: 1000px; border-radius: 10px; box-shadow: 0 0 20px rgba(229, 9, 20, 0.5); }
-    </style>
+    <title>{{ film['titre'] }} - MFY</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='index.css') }}">
 </head>
-<body>
-    <div class="hero">
-        <div class="content">
-            <h1 class="title">{{ movie[1] }}</h1>
-            <div class="meta">
-                <span>Nouveau</span><span>2026</span><span>18+</span><span>HD</span>
-            </div>
-            <p class="desc">{{ movie[4] if movie[4] else "Pas de description disponible pour ce film." }}</p>
-            <a href="#player" class="btn-play">▶ LECTURE</a>
-        </div>
+<body style="background: #141414; color: white; font-family: sans-serif; text-align: center; padding-top: 50px;">
+    <h1>{{ film['titre'] }}</h1>
+    
+    <div style="margin: 30px auto; max-width: 800px;">
+        <iframe width="100%" height="450" src="{{ film['lien'] }}" frameborder="0" allowfullscreen></iframe>
     </div>
 
-  <div class="video-container" id="player" style="margin-top: 50px; position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; border-radius: 12px; box-shadow: 0 0 30px rgba(229, 9, 20, 0.3); border: 1px solid #333;">
-    <iframe 
-        src="{{ movie[3] }}" 
-        style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: none;" 
-        allowfullscreen 
-        allow="autoplay; encrypted-media">
-    </iframe>
-</div>
+    <p style="max-width: 600px; margin: 20px auto; color: #ccc;">{{ film['description'] }}</p>
+
+    <br>
+    <a href="{{ url_for('index') }}" style="color: #e50914; text-decoration: none; font-weight: bold;">← Retour au catalogue</a>
 </body>
 </html>
