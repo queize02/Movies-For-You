@@ -112,18 +112,29 @@ def admin_ajouter():
             conn.close()
 
             # Notification Discord
+            # Notification Discord
             payload = {
                 "embeds": [{
                     "title": "💡 Nouvelle suggestion de film",
-                    "description": f"Film : **{film['title']}**\nProposé par : **{session['user']}**\n\n*Clique sur 'Ajouter le lien' pour finaliser.*",
+                    "description": f"Film : **{film['title']}**\nProposé par : **{session['user']}**\n\n*Clique sur le bouton ci-dessous pour ajouter le lien et valider.*",
                     "color": 3447003,
                     "thumbnail": {"url": f"https://image.tmdb.org/t/p/w500{film['poster_path']}"}
                 }],
                 "components": [{
-                    "type": 1,
+                    "type": 1, # Action Row
                     "components": [
-                        { "type": 2, "label": "🔗 Ajouter le lien & Approuver", "style": 5, "url": f"https://movies-for-you.onrender.com/admin/approve_form/{film_id}" },
-                        { "type": 2, "label": "❌ Refuser", "style": 5, "url": f"https://movies-for-you.onrender.com/admin/deny/{film_id}" }
+                        { 
+                            "type": 2, 
+                            "label": "🔗 Ajouter le lien & Approuver", 
+                            "style": 5, 
+                            "url": f"https://movies-for-you.onrender.com/admin/approve_form/{film_id}" 
+                        },
+                        { 
+                            "type": 2, 
+                            "label": "❌ Refuser", 
+                            "style": 5, 
+                            "url": f"https://movies-for-you.onrender.com/admin/deny/{film_id}" 
+                        }
                     ]
                 }]
             }
