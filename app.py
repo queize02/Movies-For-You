@@ -112,11 +112,11 @@ def admin_ajouter():
                 cur.close()
                 conn.close()
 
-                # Structure Discord strictement conforme pour afficher le bouton
+                # Payload Discord nettoyé et validé
                 payload = {
                     "embeds": [{
                         "title": "💡 Nouvelle suggestion de film",
-                        "description": f"Film : **{film['title']}**\nProposé par : **{session['user']}**\n\n*Clique sur le bouton pour ajouter le lien.*",
+                        "description": f"Film : **{film['title']}**\nProposé par : **{session['user']}**\n\n*Clique sur le bouton pour finaliser l'ajout.*",
                         "color": 3447003,
                         "thumbnail": {"url": f"https://image.tmdb.org/t/p/w500{film['poster_path']}"}
                     }],
@@ -127,13 +127,17 @@ def admin_ajouter():
                                 "type": 2, 
                                 "label": "🔗 Ajouter le lien & Approuver", 
                                 "style": 5, 
-                                "url": f"https://movies-for-you.onrender.com/admin/approve_form/{film_id}" 
+                                "url": f"https://movies-for-you.onrender.com/admin/approve_form/{film_id}"
                             }
                         ]
                     }]
                 }
                 
-                requests.post(WEBHOOK_AJOUTS, json=payload, timeout=5)
+                # Envoi avec vérification
+                r = requests.post(WEBHOOK_AJOUTS, json=payload, timeout=5)
+                if r.status_code != 204:
+                    print(f"Erreur Discord : {r.text}")
+                
                 flash("Suggestion envoyée avec succès !")
                 return redirect(url_for('index'))
             else:
