@@ -114,27 +114,31 @@ def admin_ajouter():
 
                 # Payload Discord nettoyé et validé
                # Payload "Force" pour Discord
+              # Payload ultra-simplifié sans f-string pour éviter tout bug
                 payload = {
                     "embeds": [{
-                        "title": "💡 Nouvelle suggestion de film",
-                        "description": f"Film : **{film['title']}**\nProposé par : **{session['user']}**\n\n*Clique sur le bouton pour finaliser l'ajout.*",
+                        "title": "💡 Suggestion de film",
+                        "description": "Film : " + film['title'] + "\nProposé par : " + session['user'],
                         "color": 3447003,
-                        "thumbnail": {"url": f"https://image.tmdb.org/t/p/w500{film['poster_path']}"}
+                        "thumbnail": {"url": "https://image.tmdb.org/t/p/w500" + film['poster_path']}
                     }],
-                    "components": [
-                        {
-                            "type": 1,
-                            "components": [
-                                {
-                                    "type": 2,
-                                    "label": "🔗 Ajouter le lien & Approuver",
-                                    "style": 5,
-                                    "url": "https://www.google.com"
-                                }
-                            ]
-                        }
-                    ]
+                    "components": [{
+                        "type": 1,
+                        "components": [{
+                            "type": 2,
+                            "style": 5,
+                            "label": "Approuver",
+                            "url": "https://www.google.com"
+                        }]
+                    }]
                 }
+                
+                # Envoi avec Headers forcés
+                headers = {"Content-Type": "application/json"}
+                r = requests.post(WEBHOOK_AJOUTS, json=payload, headers=headers, timeout=5)
+                
+                if r.status_code != 204:
+                    print(f"ERREUR DISCORD : {r.status_code} - {r.text}")
                 # Envoi avec vérification
                 r = requests.post(WEBHOOK_AJOUTS, json=payload, timeout=5)
                 if r.status_code != 204:
