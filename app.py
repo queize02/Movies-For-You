@@ -116,20 +116,18 @@ def admin_ajouter():
                 payload = {
                     "embeds": [{
                         "title": "💡 Nouvelle suggestion de film",
-                        "description": f"Film : **{film['title']}**\nProposé par : **{session['user']}**\n\n*Clique sur le bouton pour finaliser l'ajout.*",
+                        "description": f"Film : **{film['title']}**\nProposé par : **{session['user']}**",
                         "color": 3447003,
                         "thumbnail": {"url": f"https://image.tmdb.org/t/p/w500{film['poster_path']}"}
                     }],
                     "components": [{
                         "type": 1,
-                        "components": [
-                            { 
-                                "type": 2, 
-                                "label": "🔗 Ajouter le lien & Approuver", 
-                                "style": 5, 
-                                "url": f"https://movies-for-you.onrender.com/admin/approve_form/{film_id}"
-                            }
-                        ]
+                        "components": [{
+                            "type": 2,
+                            "style": 5,
+                            "label": "🔗 Ajouter le lien",
+                            "url": f"https://movies-for-you.onrender.com/admin/approve_form/{film_id}"
+                        }]
                     }]
                 }
                 
