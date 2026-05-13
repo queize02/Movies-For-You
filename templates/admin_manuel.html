@@ -9,6 +9,15 @@
 <body style="background: #141414; color: white; font-family: sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0;">
 
     <div style="background: #1f1f1f; padding: 40px; border-radius: 15px; border: 1px solid #e50914; width: 400px; text-align: center; box-shadow: 0 10px 25px rgba(0,0,0,0.5);">
+        {% with messages = get_flashed_messages() %}
+  {% if messages %}
+    {% for message in messages %}
+      <div style="background: rgba(70, 211, 105, 0.2); color: #46d369; padding: 10px; border-radius: 5px; margin-bottom: 20px; border: 1px solid #46d369;">
+        {{ message }}
+      </div>
+    {% endfor %}
+  {% endif %}
+{% endwith %}
         <h2 style="color: #e50914; margin-bottom: 25px;">🚀 Ajout Rapide Admin</h2>
         
         <form method="POST">
