@@ -11,12 +11,16 @@
     <div class="navbar">
         <nav>
             <ul>
-                <li><a href="/">Accueil</a></li>
-                <li><a href="/request">Demander un film</a></li>
-                <li><a href="">serie</a></li>
-         {% if session['user'] in ['wQueize_', 'tenoste'] %}
-<li><a href="/admin_ajouter"> + Ajouter un film </a></li>
-{% endif %}
+               <ul>
+    <li><a href="/">Accueil</a></li>
+    <li><a href="/admin_ajouter">Proposer un film</a></li> 
+    
+    <li><a href="">Série</a></li>
+
+    {% if session['user'] in ['wQueize_', 'tenoste'] %}
+        <li><a href="/admin_ajouter" style="color: #46d369;">+ Admin</a></li>
+    {% endif %}
+</ul>
                 <li style="margin-left: auto;">
                     <a href="/logout" class="logout-link" style="color: #888;">Se déconnecter ({{ session['user'] }})</a>
                 </li>

@@ -87,10 +87,12 @@ def index():
     conn.close()
     return render_template('index.html', films=films)
 
-@app.route('/admin_ajouter', methods=['GET', 'POST'])
+@app.route('/admin_ajouter', methods=['GET', 'POST']) # Tu peux la renommer en /proposer si tu veux
 def admin_ajouter():
-    if 'user' not in session or session['user'] not in ADMINS:
-        return "Accès interdit", 403
+    # MODIFICATION : On enlève "or session['user'] not in ADMINS"
+    if 'user' not in session: 
+        return redirect(url_for('login'))
+    
     if request.method == 'POST':
         titre_film = request.form.get('titre')
         lien_video = request.form.get('lien')
