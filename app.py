@@ -89,35 +89,33 @@ def index():
 
 @app.route('/admin_ajouter', methods=['GET', 'POST'])
 def admin_ajouter():
-    # 1. Vérifie si l'utilisateur est bien connecté
-    if 'user' not in session:
+    if 'user' not in session: 
         return redirect(url_for('login'))
-
+    
     if request.method == 'POST':
         titre_film = request.form.get('titre')
+        lien_video = request.form.get('lien') or "Lien à définir"
         
-        # On cherche sur TMDB
         params = {"api_key": TMDB_API_KEY, "query": titre_film, "language": "fr-FR"}
+        
         try:
             response = requests.get("https://api.themoviedb.org/3/search/movie", params=params, timeout=5).json()
             
             if response.get('results'):
                 film = response['results'][0]
-                
-                # 2. Insertion en base (on met un lien vide par défaut)
                 conn = get_db_connection()
                 cur = conn.cursor()
                 cur.execute("INSERT INTO films (titre, affiche, lien, description, status) VALUES (%s, %s, %s, %s, 'pending') RETURNING id", 
-                             (film['title'], f"https://image.tmdb.org/t/p/w500{film['poster_path']}", "À AJOUTER", film['overview']))
+                             (film['title'], f"https://image.tmdb.org/t/p/w500{film['poster_path']}", lien_video, film['overview']))
                 film_id = cur.fetchone()[0]
                 conn.commit()
                 cur.close()
                 conn.close()
 
-                # 3. Préparation du message Discord
+                # Structure CORRECTE pour les boutons Discord
                 payload = {
                     "embeds": [{
-                        "title": "💡 Nouvelle suggestion",
+                        "title": "💡 Nouvelle suggestion de film",
                         "description": f"Film : **{film['title']}**\nProposé par : **{session['user']}**",
                         "color": 3447003,
                         "thumbnail": {"url": f"https://image.tmdb.org/t/p/w500{film['poster_path']}"}
@@ -126,22 +124,22 @@ def admin_ajouter():
                         "type": 1,
                         "components": [
                             { 
-                                "type": 2, "style": 5, "label": "🔗 Ajouter le lien", 
+                                "type": 2, 
+                                "label": "🔗 Ajouter le lien & Approuver", 
+                                "style": 5, 
                                 "url": f"https://movies-for-you.onrender.com/admin/approve_form/{film_id}" 
                             }
                         ]
                     }]
                 }
-                
-                # Envoi à Discord
                 requests.post(WEBHOOK_AJOUTS, json=payload, timeout=5)
-                flash("Merci ! Ta suggestion a été envoyée.")
+                flash("Suggestion envoyée !")
                 return redirect(url_for('index'))
             else:
-                flash("Film introuvable...")
+                flash("Film introuvable sur TMDB.")
         except Exception as e:
             print(f"ERREUR : {e}")
-            flash("Erreur technique lors de l'envoi.")
+            flash("Erreur lors de l'envoi.")
             
     return render_template('admin.html')
 
