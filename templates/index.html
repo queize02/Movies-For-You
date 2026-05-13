@@ -39,15 +39,14 @@
 
     <div class="container" style="margin-top: 80px;">
         <h2 style="margin-bottom: 20px; padding-left: 20px;">Catalogue</h2>
-<div class="grid">
+        <div class="grid">
             {% for film in films %}
             <div class="movie-card">
                 <img src="{{ film[2] }}" alt="Poster de {{ film[1] }}">
                 <div style="padding: 15px;">
                     <h3 style="font-size: 1.1rem; margin-bottom: 10px;">{{ film[1] }}</h3>
-                    
-                    <a href="{{ url_for('movie_detail', movie_id=film[0]) }}" 
-                       style="display: inline-block; background-color: #e50914; color: white; padding: 8px 15px; text-decoration: none; border-radius: 4px; font-weight: bold;">
+                    <a href="/film/{{ film[0] }}" class="btn-watch" 
+                       style="display: inline-block; color: #e50914; text-decoration: none; font-weight: bold; border: 1px solid #e50914; padding: 5px 10px; border-radius: 4px;">
                        Regarder
                     </a>
                 </div>

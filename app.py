@@ -147,22 +147,5 @@ def regarder_film(film_id):
         film = cursor.fetchone()
     return render_template('player.html', film=film) if film else ("Introuvable", 404)
 
-
-@app.route('/movie/<int:movie_id>')
-def movie_detail(movie_id):
-    if 'user' not in session: 
-        return redirect(url_for('login'))
-        
-    with sqlite3.connect(DB_FILMS) as conn:
-        cursor = conn.cursor()
-        # On récupère le film par son ID
-        cursor.execute("SELECT id, titre, affiche, lien FROM films WHERE id = ?", (movie_id,))
-        movie = cursor.fetchone()
-    
-    if movie:
-        return render_template('movie_detail.html', movie=movie)
-    else:
-        return "Film introuvable", 404
-
 if __name__ == '__main__':
     app.run(debug=True)
