@@ -94,7 +94,7 @@ def admin_ajouter():
     
     if request.method == 'POST':
         titre_film = request.form.get('titre')
-        lien_video = "À définir"
+        lien_temporaire = "À définir par l'admin"
         
         params = {"api_key": TMDB_API_KEY, "query": titre_film, "language": "fr-FR"}
         
@@ -106,73 +106,17 @@ def admin_ajouter():
                 conn = get_db_connection()
                 cur = conn.cursor()
                 cur.execute("INSERT INTO films (titre, affiche, lien, description, status) VALUES (%s, %s, %s, %s, 'pending') RETURNING id", 
-                             (film['title'], f"https://image.tmdb.org/t/p/w500{film['poster_path']}", lien_video, film['overview']))
+                             (film['title'], f"https://image.tmdb.org/t/p/w500{film['poster_path']}", lien_temporaire, film['overview']))
                 film_id = cur.fetchone()[0]
                 conn.commit()
                 cur.close()
                 conn.close()
 
-                # Structure Discord corrigée (components doit être une liste de dictionnaires)
-                payload = {
-                    "embeds": [{
-                        "title": "💡 Nouvelle suggestion",
-                        "description": f"Film : **{film['title']}**\nProposé par : **{session['user']}**",
-                        "color": 3447003,
-                        "thumbnail": {"url": f"https://image.tmdb.org/t/p/w500{film['poster_path']}"}
-                    }],
-                    "components": [
-                        {
-                            "type": 1,
-                            "components": [
-                                {
-                                    "type": 2,
-                                    "style": 5,
-                                    "label": "🔗 Ajouter le lien & Approuver",
-                                    "url": f"https://movies-for-you.onrender.com/admin/approve_form/{film_id}"
-                                }
-                            ]
-                        }
-                    ]
-                }
-                # Utilise json=payload pour envoyer les données correctement
-                requests.post(WEBHOOK_AJOUTS, json=payload, timeout=5)
-                flash("Merci ! Ta suggestion a été envoyée.")
-                return redirect(url_for('index'))
-            else:
-                flash("Film introuvable...")
-        except Exception as e:
-            print(f"ERREUR : {e}")
-            flash("Erreur technique lors de l'envoi.")
-            
-    return render_template('admin.html')
-    if 'user' not in session: 
-        return redirect(url_for('login'))
-    
-    if request.method == 'POST':
-        titre_film = request.form.get('titre')
-        lien_video = request.form.get('lien') or "Lien à définir"
-        
-        params = {"api_key": TMDB_API_KEY, "query": titre_film, "language": "fr-FR"}
-        
-        try:
-            response = requests.get("https://api.themoviedb.org/3/search/movie", params=params, timeout=5).json()
-            
-            if response.get('results'):
-                film = response['results'][0]
-                conn = get_db_connection()
-                cur = conn.cursor()
-                cur.execute("INSERT INTO films (titre, affiche, lien, description, status) VALUES (%s, %s, %s, %s, 'pending') RETURNING id", 
-                             (film['title'], f"https://image.tmdb.org/t/p/w500{film['poster_path']}", lien_video, film['overview']))
-                film_id = cur.fetchone()[0]
-                conn.commit()
-                cur.close()
-                conn.close()
-
-                # Structure CORRECTE pour les boutons Discord
+                # Structure Discord strictement conforme pour afficher le bouton
                 payload = {
                     "embeds": [{
                         "title": "💡 Nouvelle suggestion de film",
-                        "description": f"Film : **{film['title']}**\nProposé par : **{session['user']}**",
+                        "description": f"Film : **{film['title']}**\nProposé par : **{session['user']}**\n\n*Clique sur le bouton pour ajouter le lien.*",
                         "color": 3447003,
                         "thumbnail": {"url": f"https://image.tmdb.org/t/p/w500{film['poster_path']}"}
                     }],
@@ -188,14 +132,15 @@ def admin_ajouter():
                         ]
                     }]
                 }
+                
                 requests.post(WEBHOOK_AJOUTS, json=payload, timeout=5)
-                flash("Suggestion envoyée !")
+                flash("Suggestion envoyée avec succès !")
                 return redirect(url_for('index'))
             else:
                 flash("Film introuvable sur TMDB.")
         except Exception as e:
             print(f"ERREUR : {e}")
-            flash("Erreur lors de l'envoi.")
+            flash("Erreur lors de la communication avec Discord.")
             
     return render_template('admin.html')
 
