@@ -95,7 +95,6 @@ def admin_ajouter():
         titre_film = request.form.get('titre')
         lien_temporaire = "À définir par l'admin"
         
-        # 1. On cherche les infos sur TMDB
         params = {"api_key": TMDB_API_KEY, "query": titre_film, "language": "fr-FR"}
         try:
             response = requests.get("https://api.themoviedb.org/3/search/movie", params=params, timeout=5).json()
@@ -103,7 +102,7 @@ def admin_ajouter():
             if response.get('results'):
                 film = response['results'][0]
                 
-                # 2. On enregistre dans la base de données pour avoir un film_id
+                # Enregistrement en base de données
                 conn = get_db_connection()
                 cur = conn.cursor()
                 cur.execute("INSERT INTO films (titre, affiche, lien, description, status) VALUES (%s, %s, %s, %s, 'pending') RETURNING id", 
@@ -113,7 +112,7 @@ def admin_ajouter():
                 cur.close()
                 conn.close()
 
-                # 3. On prépare les données pour ton BOT JS
+                # Préparation des données pour le BOT JS
                 data_pour_bot = {
                     "titre": film['title'],
                     "user": session['user'],
@@ -121,11 +120,13 @@ def admin_ajouter():
                     "film_id": film_id
                 }
                 
-                # 4. On envoie au Bot JS (localhost:3000 pour tes tests locaux)
+                # ENVOI AU BOT SUR RENDER
                 try:
-                    requests.post("http://localhost:3000/nouvelle-suggestion", json=data_pour_bot, timeout=5)
+                    # REMPLACE BIEN PAR TON URL RENDER RÉELLE
+                    render_url = "https://bot-js-d82c0u4vikkc73ejlii0.onrender.com/nouvelle-suggestion"
+                    requests.post(render_url, json=data_pour_bot, timeout=5)
                 except Exception as e:
-                    print(f"Bot JS non lancé ou injoignable : {e}")
+                    print(f"Erreur d'envoi au Bot : {e}")
 
                 flash("Merci ! Ta suggestion a été envoyée.")
                 return redirect(url_for('index'))
