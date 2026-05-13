@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>{{ movie.title }} - MFY</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body style="background-color: #141414; color: white; font-family: Arial;">
+    <div class="container" style="padding: 50px; text-align: center;">
+        <h1>{{ movie.title }}</h1>
+        <img src="{{ movie.image_url }}" style="width: 300px; border-radius: 10px;">
+        
+        <div class="description" style="margin: 20px auto; max-width: 600px;">
+            <h3>Description :</h3>
+            <p>{{ movie.description }}</p>
+        </div>
+
+        <div class="video-player" style="margin-top: 30px;">
+            <video width="100%" controls style="max-width: 800px; border: 2px solid #e50914;">
+                <source src="{{ movie.video_url }}" type="video/mp4">
+                Votre navigateur ne supporte pas la lecture de vidéos.
+            </video>
+        </div>
+        
+        <br>
+        <a href="/" style="color: #e50914; text-decoration: none;">← Retour à l'accueil</a>
+    </div>
+</body>
+</html>

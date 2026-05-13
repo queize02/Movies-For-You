@@ -147,5 +147,15 @@ def regarder_film(film_id):
         film = cursor.fetchone()
     return render_template('player.html', film=film) if film else ("Introuvable", 404)
 
+
+@app.route('/movie/<int:movie_id>')
+def movie_detail(movie_id):
+    # Ici, tu dois chercher le film dans ta base de données avec son ID
+    # Exemple si tu utilises SQLite :
+    # movie = db.execute('SELECT * FROM films WHERE id = ?', (movie_id,)).fetchone()
+    return render_template('movie_detail.html', movie=movie)
+
+
+
 if __name__ == '__main__':
     app.run(debug=True)
