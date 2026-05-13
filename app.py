@@ -8,7 +8,12 @@ import os
 app = Flask(__name__)
 app.secret_key = "user_securited"
 
-ADMINS = ["wQueize_","tenoste"]
+ADMINS = ["wQueize_", "tenoste"]
+
+def is_admin():
+    if 'user' not in session:
+        return False
+    return session['user'].lower() in ADMINS
 
 # --- CONNEXION NEON (PostgreSQL) ---
 DB_URL = "postgresql://neondb_owner:npg_jQVktANW7Y8e@ep-gentle-glitter-aldcjmmp-pooler.c-3.eu-central-1.aws.neon.tech/neondb?sslmode=require"
@@ -140,11 +145,9 @@ def admin_ajouter():
 
 @app.route('/admin_manuel', methods=['GET', 'POST'])
 def admin_manuel():
-    # Sécurité : Seuls wQueize_ et tenoste peuvent accéder
-    if 'user' not in session or session['user'] not in ADMINS:
+    if not is_admin():
         flash("Accès réservé aux administrateurs.")
         return redirect(url_for('index'))
-    
     if request.method == 'POST':
         titre = request.form.get('titre')
         lien = request.form.get('lien')
@@ -213,9 +216,9 @@ def admin_confirm_deny(movie_id):
 
 @app.route('/admin/approve_form/<int:movie_id>', methods=['GET', 'POST'])
 def admin_approve_form(movie_id):
-    # Sécurité : Seuls les admins peuvent voir cette page
-    if 'user' not in session or session['user'] not in ADMINS:
+    if not is_admin():
         return "Accès interdit", 403
+    # ... reste du code inchangé ...
     
     if request.method == 'POST':
         nouveau_lien = request.form.get('lien_final')
