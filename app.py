@@ -124,10 +124,9 @@ def admin_ajouter():
                     "type": 1, # Action Row
                     "components": [
                         { 
-                            "type": 2, 
-                            "label": "🔗 Ajouter le lien & Approuver", 
-                            "style": 5, 
-                            "url": f"https://movies-for-you.onrender.com/admin/approve_form/{film_id}" 
+                            "components": [
+    { "type": 2, "label": "Test Lien", "style": 5, "url": "https://google.com" }
+]
                         },
                         { 
                             "type": 2, 
