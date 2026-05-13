@@ -46,12 +46,13 @@ def login():
         
         if user:
             session['user'] = username
-            # On renvoie la page login avec un paramètre 'success'
+            # On reste sur login.html mais on envoie "success=True"
             return render_template('login.html', success=True)
         else:
             flash("Identifiants incorrects")
+            return render_template('login.html', success=False)
             
-    return render_template('login.html', success=False)
+    return render_template('login.html')
 
 @app.route('/register', methods=['GET', 'POST'])
 def register():
