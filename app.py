@@ -137,6 +137,50 @@ def admin_ajouter():
             flash("Une erreur est survenue lors de l'ajout.")
             
     return render_template('admin.html')
+
+@app.route('/admin_manuel', methods=['GET', 'POST'])
+def admin_manuel():
+    # Sécurité : Seuls wQueize_ et tenoste peuvent accéder
+    if 'user' not in session or session['user'] not in ADMINS:
+        flash("Accès réservé aux administrateurs.")
+        return redirect(url_for('index'))
+    
+    if request.method == 'POST':
+        titre = request.form.get('titre')
+        lien = request.form.get('lien')
+        
+        # On récupère automatiquement l'affiche sur TMDB
+        params = {"api_key": TMDB_API_KEY, "query": titre, "language": "fr-FR"}
+        try:
+            response = requests.get("https://api.themoviedb.org/3/search/movie", params=params).json()
+            if response.get('results'):
+                film = response['results'][0]
+                conn = get_db_connection()
+                cur = conn.cursor()
+                # On insère DIRECTEMENT en 'approved'
+                cur.execute("INSERT INTO films (titre, affiche, lien, description, status) VALUES (%s, %s, %s, %s, 'approved')", 
+                             (film['title'], f"https://image.tmdb.org/t/p/w500{film['poster_path']}", lien, film['overview']))
+                conn.commit()
+                cur.close()
+                conn.close()
+                flash(f"✅ Film '{film['title']}' ajouté directement !")
+                return redirect(url_for('index'))
+        except Exception as e:
+            flash(f"Erreur : {e}")
+            
+    # Formulaire simple pour l'admin
+    return '''
+        <body style="background: #141414; color: white; font-family: sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh;">
+            <form method="post" style="background: #1f1f1f; padding: 30px; border-radius: 10px; border: 1px solid #e50914; text-align: center; width: 400px;">
+                <h2 style="color: #e50914;">Ajout Manuel (Admin)</h2>
+                <input type="text" name="titre" placeholder="Titre du film" style="width: 100%; padding: 12px; margin-bottom: 10px;" required>
+                <input type="text" name="lien" placeholder="Lien de la vidéo" style="width: 100%; padding: 12px; margin-bottom: 20px;" required>
+                <button type="submit" style="background: #e50914; color: white; border: none; padding: 12px; width: 100%; cursor: pointer; font-weight: bold;">PUBLIER DIRECTEMENT</button>
+                <br><br><a href="/" style="color: gray; text-decoration: none;">Retour</a>
+            </form>
+        </body>
+    '''
+
 @app.route('/logout')
 def logout():
     session.pop('user', None)
@@ -199,6 +243,8 @@ def admin_approve_form(movie_id):
             </form>
         </body>
     '''
+
+
 
 if __name__ == '__main__':
     with app.app_context():
