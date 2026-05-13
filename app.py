@@ -123,7 +123,7 @@ def admin_ajouter():
                 # ENVOI AU BOT SUR RENDER
                 try:
                     # REMPLACE BIEN PAR TON URL RENDER RÉELLE
-                    render_url = "https://bot-js-d82c0u4vikkc73ejlii0.onrender.com/nouvelle-suggestion"
+                    render_url = "https://bot-js-l8hi.onrender.com/nouvelle-suggestion"
                     requests.post(render_url, json=data_pour_bot, timeout=5)
                 except Exception as e:
                     print(f"Erreur d'envoi au Bot : {e}")
