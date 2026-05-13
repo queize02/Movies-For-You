@@ -244,6 +244,24 @@ def admin_approve_form(movie_id):
         </body>
     '''
 
+@app.route('/movie/<int:movie_id>')
+def movie_detail(movie_id):
+    if 'user' not in session: 
+        return redirect(url_for('login'))
+        
+    conn = get_db_connection()
+    cur = conn.cursor()
+    cur.execute("SELECT * FROM films WHERE id = %s", (movie_id,))
+    film = cur.fetchone()
+    cur.close()
+    conn.close()
+    
+    if film:
+        # Assure-toi d'avoir un fichier movie_detail.html dans ton dossier templates
+        return render_template('movie_detail.html', film=film)
+    else:
+        flash("Film introuvable.")
+        return redirect(url_for('index'))
 
 
 if __name__ == '__main__':
