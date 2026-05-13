@@ -11,6 +11,29 @@
     <div class="container">
         <div class="admin-box">
             <h1>Créer un compte</h1>
+            {% if success %}
+    <div id="success-message" style="padding: 20px; background-color: #28a745; color: white; border-radius: 8px; text-align: center; margin-bottom: 20px;">
+        <h3>✅ Compte créé avec succès !</h3>
+        <p>Redirection vers la page de connexion dans <span id="timer">3</span> secondes...</p>
+    </div>
+
+    <script>
+        let seconds = 3;
+        const timerElement = document.getElementById('timer');
+        
+        // Décompte visuel
+        const countdown = setInterval(() => {
+            seconds--;
+            timerElement.textContent = seconds;
+            if (seconds <= 0) clearInterval(countdown);
+        }, 1000);
+
+        // Redirection après 3 secondes (3000 millisecondes)
+        setTimeout(() => {
+            window.location.href = "{{ url_for('login') }}";
+        }, 3000);
+    </script>
+{% endif %}
             <form method="POST">
                 <input type="text" name="username" placeholder="Nom d'utilisateur" required>
                 <input type="password" name="password" placeholder="Mot de passe" required>

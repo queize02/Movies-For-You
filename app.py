@@ -74,8 +74,11 @@ def register():
             conn.commit()
             cur.close()
             conn.close()
-            return redirect(url_for('login'))
-        except:
+            
+            # On reste sur la page mais on dit que c'est un succès
+            return render_template('register.html', success=True)
+            
+        except Exception as e:
             flash("Nom d'utilisateur déjà pris")
     return render_template('register.html')
 
