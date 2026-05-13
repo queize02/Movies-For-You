@@ -19,18 +19,9 @@ TMDB_API_KEY = "1dfef7dd68067ec8b05e87b494b9a7f4"
 
 # --- INITIALISATION ET MISE À JOUR DE LA DB ---
 def init_db():
-    # Table des films
     with sqlite3.connect(DB_FILMS) as conn_f:
-        conn_f.execute('CREATE TABLE IF NOT EXISTS films (id INTEGER PRIMARY KEY AUTOINCREMENT, titre TEXT, affiche TEXT, lien TEXT)')
-        # Ajout automatique de la colonne description si elle manque (Étape A)
-        try:
-            conn_f.execute('ALTER TABLE films ADD COLUMN description TEXT')
-        except sqlite3.OperationalError:
-            pass  # La colonne existe déjà
-            
-    # Table des utilisateurs
-    with sqlite3.connect(DB_USERS) as conn_u:
-        conn_u.execute('CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY AUTOINCREMENT, username TEXT UNIQUE, password TEXT)')
+        # Ajoute 'description TEXT' à la fin
+        conn_f.execute('CREATE TABLE IF NOT EXISTS films (id INTEGER PRIMARY KEY AUTOINCREMENT, titre TEXT, affiche TEXT, lien TEXT, description TEXT)')
 
 init_db()
 
@@ -92,16 +83,17 @@ def demander_film():
     return render_template('request.html')
 
 # --- ROUTE DÉTAIL DU FILM (DESIGN NETFLIX) ---
-@app.route('/movie/<int:movie_id>')
+@app.route('/movie/<int:movie_id>') # On utilise 'movie' partout
 def movie_detail(movie_id):
     if 'user' not in session: return redirect(url_for('login'))
     with sqlite3.connect(DB_FILMS) as conn:
         cursor = conn.cursor()
-        # On récupère : id(0), titre(1), affiche(2), lien(3), description(4)
+        # On récupère les 5 colonnes : id, titre, affiche, lien, description
         cursor.execute("SELECT id, titre, affiche, lien, description FROM films WHERE id = ?", (movie_id,))
         movie = cursor.fetchone()
     
     if movie:
+        # On charge bien le fichier movie_detail.html que tu as créé
         return render_template('movie_detail.html', movie=movie)
     return "Film introuvable", 404
 
