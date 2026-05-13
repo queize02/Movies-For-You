@@ -129,7 +129,7 @@ def admin_ajouter():
                                     "type": 2,
                                     "label": "🔗 Ajouter le lien & Approuver",
                                     "style": 5,
-                                    "url": f"https://movies-for-you.onrender.com/admin/approve_form/{film_id}"
+                                    "url": "https://www.google.com"
                                 }
                             ]
                         }
