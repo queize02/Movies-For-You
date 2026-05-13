@@ -90,6 +90,7 @@ button[type="submit"]:hover {
 }
 .switch-text a {
     color: rgb(255, 0, 0);
+    text-decoration: none;
     
 }
 
