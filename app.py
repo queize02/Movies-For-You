@@ -87,17 +87,19 @@ def index():
     conn.close()
     return render_template('index.html', films=films)
 
-@app.route('/admin_ajouter', methods=['GET', 'POST']) # Tu peux la renommer en /proposer si tu veux
+@app.route('/admin_ajouter', methods=['GET', 'POST'])
 def admin_ajouter():
-    # MODIFICATION : On enlève "or session['user'] not in ADMINS"
     if 'user' not in session: 
         return redirect(url_for('login'))
     
     if request.method == 'POST':
         titre_film = request.form.get('titre')
-        lien_video = request.form.get('lien')
+        # On met un texte par défaut si le lien est vide
+        lien_video = request.form.get('lien') or "Lien à définir"
+        
         params = {"api_key": TMDB_API_KEY, "query": titre_film, "language": "fr-FR"}
         response = requests.get("https://api.themoviedb.org/3/search/movie", params=params).json()
+        
         if response.get('results'):
             film = response['results'][0]
             conn = get_db_connection()
@@ -109,38 +111,26 @@ def admin_ajouter():
             cur.close()
             conn.close()
 
-            # Envoi vers Discord avec BOUTONS
-          # Envoi vers Discord avec boutons de type LIEN (Style 5)
+            # Notification Discord
             payload = {
                 "embeds": [{
-                    "title": "🎬 Nouveau film en attente",
-                    "description": f"Film : **{film['title']}**\nPosté par : **{session['user']}**",
-                    "color": 15844367,
+                    "title": "💡 Nouvelle suggestion de film",
+                    "description": f"Film : **{film['title']}**\nProposé par : **{session['user']}**\n\n*Clique sur 'Ajouter le lien' pour finaliser.*",
+                    "color": 3447003,
                     "thumbnail": {"url": f"https://image.tmdb.org/t/p/w500{film['poster_path']}"}
                 }],
                 "components": [{
                     "type": 1,
                     "components": [
-                        {
-                            "type": 2, 
-                            "label": "✅ Approuver", 
-                            "style": 5, 
-                            "url": f"https://movies-for-you.onrender.com/admin/approve/{film_id}"
-                        },
-                        {
-                            "type": 2, 
-                            "label": "❌ Refuser", 
-                            "style": 5, 
-                            "url": f"https://movies-for-you.onrender.com/admin/deny/{film_id}"
-                        }
+                        { "type": 2, "label": "🔗 Ajouter le lien & Approuver", "style": 5, "url": f"https://movies-for-you.onrender.com/admin/approve_form/{film_id}" },
+                        { "type": 2, "label": "❌ Refuser", "style": 5, "url": f"https://movies-for-you.onrender.com/admin/deny/{film_id}" }
                     ]
                 }]
             }
             requests.post(WEBHOOK_AJOUTS, json=payload)
-            flash("Film envoyé pour validation sur Discord !")
+            flash("Suggestion envoyée !")
             return redirect(url_for('index'))
     return render_template('admin.html')
-
 
 @app.route('/logout')
 def logout():
@@ -170,6 +160,40 @@ def admin_confirm_deny(movie_id):
     cur.close()
     conn.close()
     return "<h1>❌ Film supprimé.</h1><p>Tu peux fermer cette fenêtre.</p>"
+
+
+@app.route('/admin/approve_form/<int:movie_id>', methods=['GET', 'POST'])
+def admin_approve_form(movie_id):
+    # Sécurité : Seuls les admins peuvent voir cette page
+    if 'user' not in session or session['user'] not in ADMINS:
+        return "Accès interdit", 403
+    
+    if request.method == 'POST':
+        nouveau_lien = request.form.get('lien_final')
+        conn = get_db_connection()
+        cur = conn.cursor()
+        # On met à jour le lien ET on passe le statut en 'approved'
+        cur.execute("UPDATE films SET lien = %s, status = 'approved' WHERE id = %s", (nouveau_lien, movie_id))
+        conn.commit()
+        cur.close()
+        conn.close()
+        return "<h1>✅ Film publié avec succès !</h1><p>Tu peux fermer cette page, le film est maintenant visible sur le catalogue.</p>"
+
+    # Si on arrive sur la page, on affiche un petit formulaire simple
+    return f'''
+        <body style="background: #141414; color: white; font-family: sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh;">
+            <form method="post" style="background: #1f1f1f; padding: 30px; border-radius: 10px; border: 1px solid #46d369; text-align: center;">
+                <h2 style="color: #46d369;">Finaliser l'ajout du film</h2>
+                <p>Colle le lien de la vidéo pour valider la proposition :</p>
+                <input type="text" name="lien_final" placeholder="URL de la vidéo (YouTube, Embed...)" 
+                       style="width: 100%; padding: 12px; margin-bottom: 20px; border-radius: 5px; border: none;" required>
+                <br>
+                <button type="submit" style="background: #46d369; color: black; border: none; padding: 12px 25px; border-radius: 5px; font-weight: bold; cursor: pointer;">
+                    Valider et mettre en ligne
+                </button>
+            </form>
+        </body>
+    '''
 
 if __name__ == '__main__':
     with app.app_context():
