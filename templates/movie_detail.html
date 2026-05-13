@@ -35,14 +35,13 @@
         </div>
     </div>
 
-    <div id="player" class="video-container">
-        {% if "youtube.com" in movie[3] or "youtu.be" in movie[3] %}
-            <iframe height="560" src="{{ movie[3].replace('watch?v=', 'embed/') }}" frameborder="0" allowfullscreen></iframe>
-        {% else %}
-            <video controls><source src="{{ movie[3] }}" type="video/mp4"></video>
-        {% endif %}
-        <br><br>
-        <a href="/" style="color: #666; text-decoration: none;">← Retour au catalogue</a>
-    </div>
+  <div class="video-container" id="player" style="margin-top: 50px; position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; border-radius: 12px; box-shadow: 0 0 30px rgba(229, 9, 20, 0.3); border: 1px solid #333;">
+    <iframe 
+        src="{{ movie[3] }}" 
+        style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: none;" 
+        allowfullscreen 
+        allow="autoplay; encrypted-media">
+    </iframe>
+</div>
 </body>
 </html>
