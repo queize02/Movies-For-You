@@ -14,14 +14,9 @@
                 <li><a href="/">Accueil</a></li>
                 <li><a href="/request">Demander un film</a></li>
                 <li><a href="">serie</a></li>
-                {% if session['user'] == 'wQueize_' %}
-                <li>
-                    <a href="/admin_ajouter" style="background-color: #e50914; color: white; padding: 5px 12px; border-radius: 4px; font-weight: bold; border: none;">
-                        + Ajouter un film
-                    </a>
-                </li>
-                {% endif %}
-
+         {% if session['user'] in ['wQueize_', 'tenoste'] %}
+<li><a href="/admin_ajouter"> + Ajouter un film </a></li>
+{% endif %}
                 <li style="margin-left: auto;">
                     <a href="/logout" class="logout-link" style="color: #888;">Se déconnecter ({{ session['user'] }})</a>
                 </li>

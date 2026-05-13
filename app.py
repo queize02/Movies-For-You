@@ -9,6 +9,10 @@ import os
 app = Flask(__name__)
 app.secret_key = "user_securited"
 
+ADMINS = ["wQueize_", "tenoste"]
+
+
+
 # --- CONFIGURATION DES CHEMINS ---
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DB_FILMS = os.path.join(BASE_DIR, 'films.db')
@@ -124,8 +128,11 @@ def movie_detail(movie_id):
 # --- ROUTE ADMINISTRATION ---
 @app.route('/admin_ajouter', methods=['GET', 'POST'])
 def admin_ajouter():
-    if 'user' not in session or session['user'] not in["wQueize_", "tenoste"]:
+    # La sécurité doit être ICI, à l'intérieur de la fonction
+    if 'user' not in session or session['user'] not in ADMINS:
         return "Accès interdit", 403
+    
+    # ... le reste de la fonction ajouter
     
     if request.method == 'POST':
         titre_film = request.form.get('titre')
