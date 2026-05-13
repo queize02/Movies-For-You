@@ -27,7 +27,9 @@ def init_db():
         titre TEXT, 
         affiche TEXT, 
         lien TEXT, 
-        description TEXT)''')
+        description TEXT,
+        status TEXT DEFAULT 'pending')''') # Ajouté ici
+    # ... reste du code pour users
     cur.execute('''CREATE TABLE IF NOT EXISTS users (
         id SERIAL PRIMARY KEY, 
         username TEXT UNIQUE, 
@@ -92,7 +94,8 @@ def index():
     if 'user' not in session: return redirect(url_for('login'))
     conn = get_db_connection()
     cur = conn.cursor()
-    cur.execute('SELECT id, titre, affiche FROM films')
+    # On ajoute la condition WHERE status = 'approved'
+    cur.execute("SELECT id, titre, affiche FROM films WHERE status = 'approved'")
     films = cur.fetchall()
     cur.close()
     conn.close()
@@ -153,16 +156,42 @@ def admin_ajouter():
             film = response['results'][0]
             conn = get_db_connection()
             cur = conn.cursor()
-            cur.execute("INSERT INTO films (titre, affiche, lien, description) VALUES (%s, %s, %s, %s)", 
+            # On insère avec le statut 'pending' par défaut
+            cur.execute("INSERT INTO films (titre, affiche, lien, description, status) VALUES (%s, %s, %s, %s, 'pending')", 
                          (film['title'], f"https://image.tmdb.org/t/p/w500{film['poster_path']}", lien_video, film['overview']))
             conn.commit()
             cur.close()
             conn.close()
-            
-            flash("Film ajouté !")
+            flash("Film envoyé en attente d'approbation !")
             return redirect(url_for('index'))
-            
     return render_template('admin.html')
+
+
+@app.route('/admin/pending')
+def admin_pending():
+    if 'user' not in session or session['user'] not in ADMINS:
+        return "Accès interdit", 403
+    conn = get_db_connection()
+    cur = conn.cursor()
+    cur.execute("SELECT id, titre, affiche FROM films WHERE status = 'pending'")
+    movies = cur.fetchall()
+    cur.close()
+    conn.close()
+    return render_template('admin_pending.html', movies=movies)
+
+@app.route('/admin/approve/<int:movie_id>')
+def approve_movie(movie_id):
+    if 'user' not in session or session['user'] not in ADMINS:
+        return "Accès interdit", 403
+    conn = get_db_connection()
+    cur = conn.cursor()
+    cur.execute("UPDATE films SET status = 'approved' WHERE id = %s", (movie_id,))
+    conn.commit()
+    cur.close()
+    conn.close()
+    flash("Film approuvé et publié !")
+    return redirect(url_for('admin_pending'))
+
 if __name__ == '__main__':
     # On initialise les tables uniquement au lancement
     with app.app_context():
