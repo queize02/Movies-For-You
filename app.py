@@ -124,7 +124,7 @@ def movie_detail(movie_id):
 # --- ROUTE ADMINISTRATION ---
 @app.route('/admin_ajouter', methods=['GET', 'POST'])
 def admin_ajouter():
-    if 'user' not in session or session['user'] not in["wQueize_ ", "tenoste"]:
+    if 'user' not in session or session['user'] not in["wQueize_", "tenoste"]:
         return "Accès interdit", 403
     
     if request.method == 'POST':
