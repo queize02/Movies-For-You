@@ -124,40 +124,37 @@ def movie_detail(movie_id):
 # --- ROUTE ADMINISTRATION ---
 @app.route('/admin_ajouter', methods=['GET', 'POST'])
 def admin_ajouter():
-    # Vérification que c'est bien toi l'admin
     if 'user' not in session or session['user'] != "wQueize_":
         return "Accès interdit", 403
-
+    
     if request.method == 'POST':
-        titre_film = request.form['titre']
-        lien_video = request.form['lien']
+        titre_film = request.form.get('titre')
+        lien_video = request.form.get('lien')
         
-        # Recherche sur TMDB pour les infos (Affiche + Description)
+        # Correction de l'alignement ici
         params = {"api_key": TMDB_API_KEY, "query": titre_film, "language": "fr-FR"}
         response = requests.get("https://api.themoviedb.org/3/search/movie", params=params).json()
         
-    if response.get('results'):
+        if response.get('results'):
             film = response['results'][0]
             with sqlite3.connect(DB_FILMS) as conn:
                 cursor = conn.cursor()
-                # On insère les 4 valeurs avec film['overview']
+                # Insertion des 4 colonnes (titre, affiche, lien, description)
                 cursor.execute("INSERT INTO films (titre, affiche, lien, description) VALUES (?, ?, ?, ?)", 
                              (film['title'], f"https://image.tmdb.org/t/p/w500{film['poster_path']}", lien_video, film['overview']))
                 film_id = cursor.lastrowid
             
             # Notification Discord
-            lien_site = f"{request.host_url}movie/{film_id}"
             data = {
                 "embeds": [{
                     "title": "🎬 Nouveau film !",
-                    "description": f"**{film['title']}** est maintenant disponible.\n\n{film['overview'][:150]}...",
-                    "thumbnail": {"url": f"https://image.tmdb.org/t/p/w500{film['poster_path']}"},
+                    "description": f"**{film['title']}** est dispo.\n{film['overview'][:150]}...",
                     "color": 15158332,
-                    "fields": [{"name": "Lien direct", "value": f"[Regarder sur MFY]({lien_site})"}]
+                    "thumbnail": {"url": f"https://image.tmdb.org/t/p/w500{film['poster_path']}"}
                 }]
             }
             requests.post(WEBHOOK_AJOUTS, json=data)
-            flash("Film ajouté avec succès !")
+            flash("Film ajouté !")
             return redirect(url_for('index'))
             
     return render_template('admin.html')
