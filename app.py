@@ -37,7 +37,6 @@ def init_db():
     conn.close()
 
 # --- CONFIGURATION WEBHOOKS ET API ---
-WEBHOOK_AJOUTS = "https://discord.com/api/webhooks/1502005094152011837/HNwcpRHhSdmd9A1VSk2IrsZ0w3Gi5dL7L7zYJspXqOUCHkgCuD4mJJrpzss5FtTUpzKk"
 TMDB_API_KEY = "1dfef7dd68067ec8b05e87b494b9a7f4"
 
 @app.route('/login', methods=['GET', 'POST'])
@@ -96,13 +95,15 @@ def admin_ajouter():
         titre_film = request.form.get('titre')
         lien_temporaire = "À définir par l'admin"
         
+        # 1. On cherche les infos sur TMDB
         params = {"api_key": TMDB_API_KEY, "query": titre_film, "language": "fr-FR"}
-        
         try:
             response = requests.get("https://api.themoviedb.org/3/search/movie", params=params, timeout=5).json()
             
             if response.get('results'):
                 film = response['results'][0]
+                
+                # 2. On enregistre dans la base de données pour avoir un film_id
                 conn = get_db_connection()
                 cur = conn.cursor()
                 cur.execute("INSERT INTO films (titre, affiche, lien, description, status) VALUES (%s, %s, %s, %s, 'pending') RETURNING id", 
@@ -112,48 +113,29 @@ def admin_ajouter():
                 cur.close()
                 conn.close()
 
-                # Payload Discord nettoyé et validé
-               # Payload "Force" pour Discord
-              # Payload ultra-simplifié sans f-string pour éviter tout bug
-                payload = {
-                    "embeds": [{
-                        "title": "💡 Suggestion de film",
-                        "description": "Film : " + film['title'] + "\nProposé par : " + session['user'],
-                        "color": 3447003,
-                        "thumbnail": {"url": "https://image.tmdb.org/t/p/w500" + film['poster_path']}
-                    }],
-                    "components": [{
-                        "type": 1,
-                        "components": [{
-                            "type": 2,
-                            "style": 5,
-                            "label": "Approuver",
-                            "url": "https://www.google.com"
-                        }]
-                    }]
+                # 3. On prépare les données pour ton BOT JS
+                data_pour_bot = {
+                    "titre": film['title'],
+                    "user": session['user'],
+                    "affiche": f"https://image.tmdb.org/t/p/w500{film['poster_path']}",
+                    "film_id": film_id
                 }
                 
-                # Envoi avec Headers forcés
-                headers = {"Content-Type": "application/json"}
-                r = requests.post(WEBHOOK_AJOUTS, json=payload, headers=headers, timeout=5)
-                
-                if r.status_code != 204:
-                    print(f"ERREUR DISCORD : {r.status_code} - {r.text}")
-                # Envoi avec vérification
-                r = requests.post(WEBHOOK_AJOUTS, json=payload, timeout=5)
-                if r.status_code != 204:
-                    print(f"Erreur Discord : {r.text}")
-                
-                flash("Suggestion envoyée avec succès !")
+                # 4. On envoie au Bot JS (localhost:3000 pour tes tests locaux)
+                try:
+                    requests.post("http://localhost:3000/nouvelle-suggestion", json=data_pour_bot, timeout=5)
+                except Exception as e:
+                    print(f"Bot JS non lancé ou injoignable : {e}")
+
+                flash("Merci ! Ta suggestion a été envoyée.")
                 return redirect(url_for('index'))
             else:
                 flash("Film introuvable sur TMDB.")
         except Exception as e:
-            print(f"ERREUR : {e}")
-            flash("Erreur lors de la communication avec Discord.")
+            print(f"Erreur générale : {e}")
+            flash("Une erreur est survenue lors de l'ajout.")
             
     return render_template('admin.html')
-
 @app.route('/logout')
 def logout():
     session.pop('user', None)
