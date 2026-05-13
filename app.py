@@ -108,18 +108,29 @@ def admin_ajouter():
             conn.close()
 
             # Envoi vers Discord avec BOUTONS
+          # Envoi vers Discord avec boutons de type LIEN (Style 5)
             payload = {
                 "embeds": [{
-                    "title": "🎬 Nouveau film en attente d'approbation",
-                    "description": f"**{film['title']}**\n\nSouhaitez-vous publier ce film ?",
+                    "title": "🎬 Nouveau film en attente",
+                    "description": f"Film : **{film['title']}**\nPosté par : **{session['user']}**",
                     "color": 15844367,
                     "thumbnail": {"url": f"https://image.tmdb.org/t/p/w500{film['poster_path']}"}
                 }],
                 "components": [{
                     "type": 1,
                     "components": [
-                        {"type": 2, "label": "Approuver", "style": 3, "custom_id": f"approve_{film_id}"},
-                        {"type": 2, "label": "Refuser", "style": 4, "custom_id": f"deny_{film_id}"}
+                        {
+                            "type": 2, 
+                            "label": "✅ Approuver", 
+                            "style": 5, 
+                            "url": f"https://movies-for-you.onrender.com/admin/approve/{film_id}"
+                        },
+                        {
+                            "type": 2, 
+                            "label": "❌ Refuser", 
+                            "style": 5, 
+                            "url": f"https://movies-for-you.onrender.com/admin/deny/{film_id}"
+                        }
                     ]
                 }]
             }
@@ -128,36 +139,35 @@ def admin_ajouter():
             return redirect(url_for('index'))
     return render_template('admin.html')
 
-# --- ROUTE POUR LES BOUTONS DISCORD ---
-@app.route('/discord/interactions', methods=['POST'])
-def discord_interactions():
-    data = request.json
-    # Vérification PING de Discord
-    if data.get("type") == 1:
-        return jsonify({"type": 1})
-
-    # Si clic sur bouton
-    if data.get("type") == 3:
-        custom_id = data['data']['custom_id']
-        action, movie_id = custom_id.split('_')
-        conn = get_db_connection()
-        cur = conn.cursor()
-        if action == "approve":
-            cur.execute("UPDATE films SET status = 'approved' WHERE id = %s", (movie_id,))
-            msg = "✅ Film approuvé !"
-        else:
-            cur.execute("DELETE FROM films WHERE id = %s", (movie_id,))
-            msg = "❌ Film refusé et supprimé."
-        conn.commit()
-        cur.close()
-        conn.close()
-        return jsonify({"type": 4, "data": {"content": msg}})
-    return jsonify({"type": 1})
 
 @app.route('/logout')
 def logout():
     session.pop('user', None)
     return redirect(url_for('login'))
+
+@app.route('/admin/approve/<int:movie_id>')
+def admin_confirm_approve(movie_id):
+    if 'user' not in session or session['user'] not in ADMINS:
+        return "Accès interdit", 403
+    conn = get_db_connection()
+    cur = conn.cursor()
+    cur.execute("UPDATE films SET status = 'approved' WHERE id = %s", (movie_id,))
+    conn.commit()
+    cur.close()
+    conn.close()
+    return "<h1>✅ Film approuvé avec succès !</h1><p>Tu peux fermer cette fenêtre.</p>"
+
+@app.route('/admin/deny/<int:movie_id>')
+def admin_confirm_deny(movie_id):
+    if 'user' not in session or session['user'] not in ADMINS:
+        return "Accès interdit", 403
+    conn = get_db_connection()
+    cur = conn.cursor()
+    cur.execute("DELETE FROM films WHERE id = %s", (movie_id,))
+    conn.commit()
+    cur.close()
+    conn.close()
+    return "<h1>❌ Film supprimé.</h1><p>Tu peux fermer cette fenêtre.</p>"
 
 if __name__ == '__main__':
     with app.app_context():
