@@ -139,7 +139,7 @@ def admin_ajouter():
                 
                 try:
                     render_url = "https://bot-js-l8hi.onrender.com/nouvelle-suggestion"
-                    requests.post(render_url, json=data_pour_bot, timeout=5)
+                    requests.post(render_url, json=data_pour_bot, timeout=20)
                 except Exception as e:
                     print(f"Erreur d'envoi au Bot : {e}")
 
