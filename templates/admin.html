@@ -11,6 +11,15 @@
     </style>
 </head>
 <body>
+    {% with messages = get_flashed_messages() %}
+  {% if messages %}
+    {% for message in messages %}
+      <div style="color: #e50914; background: rgba(229, 9, 20, 0.1); padding: 10px; border-radius: 5px; margin-bottom: 20px; border: 1px solid #e50914;">
+        {{ message }}
+      </div>
+    {% endfor %}
+  {% endif %}
+{% endwith %}
     <div class="admin-container">
         <h1 >Ajouter un nouveau film</h1>
         <p>Entrez le titre exact, FlixMovies s'occupe de trouver l'affiche !</p>
