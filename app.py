@@ -136,8 +136,7 @@ def admin_ajouter():
                     print(f"Erreur d'envoi au Bot : {e}")
 
                 flash("Merci ! Ta suggestion a été envoyée.")
-                return redirect(url_for('index'))
-
+                return render_template('admin.html')
             else:
                 # --- C'EST ICI QUE ÇA S'AFFICHE SI LE NOM EST MAUVAIS ---
                 print(f"❌ Aucun film trouvé pour : {titre_film}")
