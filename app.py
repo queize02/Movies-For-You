@@ -145,9 +145,14 @@ def admin_ajouter():
 
 @app.route('/admin_manuel', methods=['GET', 'POST'])
 def admin_manuel():
-    if not is_admin():
-        flash("Accès réservé aux administrateurs.")
+    # On vérifie en ignorant les majuscules/minuscules
+    user = session.get('user', '')
+    if 'user' not in session or user.lower() not in [a.lower() for a in ADMINS]:
+        flash(f"Accès refusé. Ton pseudo '{user}' n'est pas reconnu comme admin.")
         return redirect(url_for('index'))
+    
+    # ... reste du code
+    # ... reste du code (if request.method == 'POST' etc.)
     if request.method == 'POST':
         titre = request.form.get('titre')
         lien = request.form.get('lien')
