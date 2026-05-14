@@ -8,7 +8,7 @@ import os
 app = Flask(__name__)
 app.secret_key = "user_securited"
 
-ADMINS = ["wQueize_", "tenoste"]
+ADMINS = ["wqueize_", "tenoste"]
 
 def is_admin():
     if 'user' not in session:
