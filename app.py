@@ -107,6 +107,9 @@ def admin_ajouter():
             if response.get('results'):
                 film = response['results'][0]
                 
+                # Log de succès
+                print(f"🎬 Film trouvé sur TMDB : {film['title']}")
+
                 # Enregistrement en base de données
                 conn = get_db_connection()
                 cur = conn.cursor()
@@ -127,7 +130,6 @@ def admin_ajouter():
                 
                 # ENVOI AU BOT SUR RENDER
                 try:
-                    # REMPLACE BIEN PAR TON URL RENDER RÉELLE
                     render_url = "https://bot-js-l8hi.onrender.com/nouvelle-suggestion"
                     requests.post(render_url, json=data_pour_bot, timeout=5)
                 except Exception as e:
@@ -135,8 +137,12 @@ def admin_ajouter():
 
                 flash("Merci ! Ta suggestion a été envoyée.")
                 return redirect(url_for('index'))
+            
             else:
+                # Si TMDB ne trouve rien
+                print(f"❌ Aucun film trouvé pour la recherche : {titre_film}")
                 flash("Film introuvable sur TMDB.")
+                
         except Exception as e:
             print(f"Erreur générale : {e}")
             flash("Une erreur est survenue lors de l'ajout.")
