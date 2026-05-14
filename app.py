@@ -47,18 +47,26 @@ TMDB_API_KEY = "1dfef7dd68067ec8b05e87b494b9a7f4"
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
-        username = request.form['username']
-        password = hashlib.sha256(request.form['password'].encode()).hexdigest()
+        username = request.form.get('username')
+        password = request.form.get('password')
+        hashed_password = hashlib.sha256(password.encode()).hexdigest()
+
         conn = get_db_connection()
         cur = conn.cursor()
-        cur.execute('SELECT * FROM users WHERE username = %s AND password = %s', (username, password))
+        cur.execute("SELECT * FROM users WHERE username = %s AND password = %s", (username, hashed_password))
         user = cur.fetchone()
         cur.close()
         conn.close()
+
         if user:
-            session['user'] = username
+            session['user'] = user['username']
+            # On retourne la page avec success=True pour afficher ton animation verte actuelle
             return render_template('login.html', success=True)
-        flash("Identifiants incorrects")
+        else:
+            # --- AJOUT ICI : Le message d'erreur ---
+            flash("Identifiant ou mot de passe incorrect.")
+            return redirect(url_for('login'))
+
     return render_template('login.html')
 
 @app.route('/register', methods=['GET', 'POST'])

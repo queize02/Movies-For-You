@@ -17,7 +17,7 @@
     
     <li><a href="">Série</a></li>
 
-{% if session['user'] in ['wqueize_', 'tenoste'] %}
+{% if session['user'].lower() in ['wqueize_', 'tenoste'] %}
     <a href="{{ url_for('admin_manuel') }}" class="btn-admin" style="background: #46d369;">+ Admin (Direct)</a>
 {% endif %}
 
