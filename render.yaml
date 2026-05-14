@@ -1,0 +1,18 @@
+# Exported from Render on 2026-05-14T21:29:39Z
+version: "1"
+projects:
+- name: My project
+  environments:
+  - name: Production
+    services:
+    - type: web
+      name: Movies-For-You
+      runtime: python
+      repo: https://github.com/queize02/Movies-For-You
+      plan: free
+      region: frankfurt
+      buildCommand: pip install -r requirements.txt
+      startCommand: gunicorn app:app
+      domains:
+      - moviesforyour.ddns.net
+      autoDeployTrigger: "off"
