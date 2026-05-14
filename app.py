@@ -151,10 +151,14 @@ def admin_ajouter():
 
 @app.route('/admin_manuel', methods=['GET', 'POST'])
 def admin_manuel():
-    # On vérifie en ignorant les majuscules/minuscules
-    user = session.get('user', '')
-    if 'user' not in session or user.lower() not in [a.lower() for a in ADMINS]:
-        flash(f"Accès refusé. Ton pseudo '{user}' n'est pas reconnu comme admin.")
+    # On récupère le pseudo en minuscules
+    current_user = session.get('user', '').lower()
+    # On met aussi la liste des admins en minuscules pour comparer
+    admins_lower = [a.lower() for a in ADMINS]
+
+    if 'user' not in session or current_user not in admins_lower:
+        # Ajoute ce flash pour voir si c'est bien un problème de droit
+        flash(f"Accès refusé pour {session.get('user')}. Tu n'es pas dans la liste admin.")
         return redirect(url_for('index'))
     
     # ... reste du code
