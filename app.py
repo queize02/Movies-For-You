@@ -133,7 +133,7 @@ def admin_ajouter():
                 except Exception as e:
                     print(f"Erreur d'envoi au Bot : {e}")
 
-                flash("Merci ! Ta su    ggestion a été envoyée.")
+                flash("Merci ! Ta suggestion a été envoyée.")
                 return redirect(url_for('index'))
             else:
                 flash("Film introuvable sur TMDB.")
