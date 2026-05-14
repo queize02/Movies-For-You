@@ -104,13 +104,14 @@ def admin_ajouter():
         try:
             response = requests.get("https://api.themoviedb.org/3/search/movie", params=params, timeout=5).json()
             
+            # 1. On vérifie si TMDB a trouvé quelque chose
             if response.get('results'):
                 film = response['results'][0]
                 
-                # Log de succès
+                # Log de succès dans la console Render
                 print(f"🎬 Film trouvé sur TMDB : {film['title']}")
 
-                # Enregistrement en base de données
+                # 2. On enregistre dans la base de données
                 conn = get_db_connection()
                 cur = conn.cursor()
                 cur.execute("INSERT INTO films (titre, affiche, lien, description, status) VALUES (%s, %s, %s, %s, 'pending') RETURNING id", 
@@ -120,7 +121,7 @@ def admin_ajouter():
                 cur.close()
                 conn.close()
 
-                # Préparation des données pour le BOT JS
+                # 3. On envoie au BOT Discord
                 data_pour_bot = {
                     "titre": film['title'],
                     "user": session['user'],
@@ -128,7 +129,6 @@ def admin_ajouter():
                     "film_id": film_id
                 }
                 
-                # ENVOI AU BOT SUR RENDER
                 try:
                     render_url = "https://bot-js-l8hi.onrender.com/nouvelle-suggestion"
                     requests.post(render_url, json=data_pour_bot, timeout=5)
@@ -137,12 +137,12 @@ def admin_ajouter():
 
                 flash("Merci ! Ta suggestion a été envoyée.")
                 return redirect(url_for('index'))
-            
+
             else:
-                # Si TMDB ne trouve rien
-                print(f"❌ Aucun film trouvé pour la recherche : {titre_film}")
-                flash("Film introuvable sur TMDB.")
-                
+                # --- C'EST ICI QUE ÇA S'AFFICHE SI LE NOM EST MAUVAIS ---
+                print(f"❌ Aucun film trouvé pour : {titre_film}")
+                flash("Film introuvable sur TMDB. Vérifie l'orthographe !")
+
         except Exception as e:
             print(f"Erreur générale : {e}")
             flash("Une erreur est survenue lors de l'ajout.")
