@@ -11,10 +11,10 @@
     </style>
 </head>
 <body>
-    {% with messages = get_flashed_messages() %}
+{% with messages = get_flashed_messages() %}
   {% if messages %}
     {% for message in messages %}
-      <div style="color: #e50914; background: rgba(229, 9, 20, 0.1); padding: 10px; border-radius: 5px; margin-bottom: 20px; border: 1px solid #e50914;">
+      <div style="padding: 15px; background-color: #46d369; color: black; margin: 20px auto; width: 80%; border-radius: 5px; text-align: center; font-weight: bold;">
         {{ message }}
       </div>
     {% endfor %}
