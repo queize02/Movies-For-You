@@ -29,6 +29,15 @@
             </ul>
         </nav>
     </div>
+    {% with messages = get_flashed_messages() %}
+  {% if messages %}
+    {% for message in messages %}
+      <div style="padding: 15px; background-color: #46d369; color: black; margin: 20px auto; width: 80%; border-radius: 5px; text-align: center; font-weight: bold; border: 1px solid #2d8a44;">
+        {{ message }}
+      </div>
+    {% endfor %}
+  {% endif %}
+{% endwith %}
 
     <div id="loader">
         <div class="loader-content">
