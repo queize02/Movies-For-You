@@ -70,7 +70,7 @@ html, body {
     height: 100vh;
     background: #050505;
     z-index: 9999;
-    display: flex;
+    display: none;
     flex-direction: column;
     justify-content: center;
     align-items: center;
@@ -156,4 +156,40 @@ html, body {
 
 ::-webkit-scrollbar-thumb:hover {
     background: #e50914;
+}
+
+
+.btn-admin {
+    background-color: #e50914;
+    color: white;
+    padding: 10px 20px;
+    border-radius: 4px;
+    text-decoration: none;
+    font-weight: bold;
+    transition: background-color 0.3s;
+}
+
+.btn-proposer{
+       background-color: #e50914;
+    color: white;
+    padding: 10px 15px;
+    border-radius: 4px;
+    text-decoration: none;
+    font-weight: bold;
+    transition: background-color 0.3s;
+}
+
+.btn-admin:hover {
+    background-color: #b20710;
+}
+
+.btn-proposer:hover {
+    background-color: #b20710;
+}   
+
+
+h2 {
+    text-transform: capitalize;
+margin-bottom: 20px; 
+padding-left: 20px;
 }

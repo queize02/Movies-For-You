@@ -18,7 +18,7 @@
     <li><a href="">Série</a></li>
 
 {% if session['user'].lower() in ['wqueize_', 'tenoste'] %}
-    <a href="{{ url_for('admin_manuel') }}" class="btn-admin" style="background: #46d369;">+ Admin (Direct)</a>
+    <a href="{{ url_for('admin_manuel') }}" class="btn-admin">+ Admin (Direct)</a>
 {% endif %}
 
 <a href="{{ url_for('admin_ajouter') }}" class="btn-proposer">Proposer un film</a>
@@ -40,7 +40,7 @@
     </div>
 
     <div class="container" style="margin-top: 80px;">
-        <h2 style="margin-bottom: 20px; padding-left: 20px;">Catalogue</h2>
+        <h2>Catalogue</h2>
         <div class="grid">
             {% for film in films %}
             <div class="movie-card">
