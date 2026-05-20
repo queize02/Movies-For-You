@@ -193,3 +193,38 @@ h2 {
 margin-bottom: 20px; 
 padding-left: 20px;
 }
+
+/* --- AJUSTEMENTS RESPONSIVE POUR MOBILE / TABLETTE --- */
+
+/* Permet d'isoler le bouton de déconnexion à droite sur PC */
+.navbar nav ul li.logout-container {
+    margin-left: auto;
+}
+
+@media (max-width: 768px) {
+    /* On empile les éléments de la navbar s'il n'y a plus de place */
+    .navbar nav ul {
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 12px;
+    }
+
+    /* On force le bouton de déconnexion à se recentrer sur mobile */
+    .navbar nav ul li.logout-container {
+        margin-left: 0;
+        width: 100%;
+        text-align: center;
+        margin-top: 5px;
+    }
+
+    /* On réduit un chouia la taille des gros boutons sur mobile */
+    .btn-admin, .btn-proposer {
+        padding: 8px 12px !important;
+        font-size: 0.85rem !important;
+    }
+
+    /* On augmente l'espace en haut du catalogue car la navbar prend plus de hauteur sur mobile */
+    .container {
+        padding-top: 150px !important;
+    }
+}
