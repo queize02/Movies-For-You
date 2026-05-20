@@ -43,17 +43,41 @@
         <h2>Catalogue</h2>
         <div class="grid">
             {% for film in films %}
-            <div class="movie-card">
-                <img src="{{ film[2] }}" alt="Poster de {{ film[1] }}">
-                <div style="padding: 15px;">
-                    <h3 style="font-size: 1.1rem; margin-bottom: 10px;">{{ film[1] }}</h3>
-                    <a href="{{ url_for('movie_detail', movie_id=film[0]) }}" class="btn-watch">Regarder</a>
+            <div class="movie-card" style="display: flex; flex-direction: column; overflow: hidden;">
+                <img src="{{ film[2] }}" alt="Poster de {{ film[1] }}" style="width: 100%; height: 350px; object-fit: cover; display: block;">
+                
+                <div style="padding: 15px; display: flex; flex-direction: column; flex-grow: 1; justify-content: space-between; background: #1a1a1a;">
+                    <h3 style="font-size: 1.1rem; margin: 0 0 10px 0; color: white;">{{ film[1] }}</h3>
+                    
+                    <div style="display: flex; flex-direction: column; gap: 8px; width: 100%;">
+                        <a href="{{ url_for('movie_detail', movie_id=film[0]) }}" class="btn-watch" style="display: block; text-align: center; width: 100%; box-sizing: border-box;">Regarder</a>
+                        
+                        {% if session['user'].lower() in ['wqueize_', 'tenoste'] %}
+                        <form action="{{ url_for('admin_supprimer', movie_id=film[0]) }}" method="POST" style="margin: 0; width: 100%;" onsubmit="return confirm('Êtes-vous sûr de vouloir supprimer {{ film[1] }} ?');">
+                            <button type="submit" style="
+                                background-color: #e50914; 
+                                color: white; 
+                                border: none; 
+                                padding: 10px; 
+                                border-radius: 4px; 
+                                font-weight: bold; 
+                                cursor: pointer;
+                                width: 100%;
+                                font-size: 0.9rem;
+                                box-sizing: border-box;
+                                transition: background 0.2s;
+                            " onmouseover="this.style.backgroundColor='#b80710'" onmouseout="this.style.backgroundColor='#e50914'">
+                                🗑️ Supprimer
+                            </button>
+                        </form>
+                        {% endif %}
+                    </div>
+
                 </div>
             </div>
             {% endfor %}
         </div>
     </div>
-
     <script>
         window.addEventListener('load', function() {
             const loader = document.getElementById('loader');

@@ -16,8 +16,7 @@ def is_admin():
     return session['user'].lower() in ADMINS
 
 # --- CONNEXION NEON (PostgreSQL) ---
-DB_URL = "postgresql://neondb_owner:npg_jQVktANW7Y8e@ep-gentle-glitter-aldcjmmp-pooler.c-3.eu-central-1.aws.neon.tech/neondb?sslmode=require"
-
+DB_URL = "postgresql://neondb_owner:npg_jQVktANW7Y8e@ep-gentle-glitter-aldcjmmp-pooler.c-3.eu-central-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require"
 def get_db_connection():
     return psycopg2.connect(DB_URL, cursor_factory=DictCursor)
 
@@ -287,6 +286,33 @@ def movie_detail(movie_id):
     else:
         flash("Film introuvable.")
         return redirect(url_for('index'))
+
+
+@app.route('/admin_supprimer/<int:movie_id>', methods=['POST'])
+def admin_supprimer(movie_id):
+    # Sécurité : On vérifie si l'utilisateur est connecté et s'il est admin
+    if 'user' not in session or not is_admin():
+        flash("🔴 Accès refusé : Vous devez être administrateur.")
+        return redirect(url_for('index'))
+    
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+        
+        # Requête SQL pour supprimer le film via son ID
+        cur.execute("DELETE FROM films WHERE id = %s", (movie_id,))
+        conn.commit()
+        
+        cur.close()
+        conn.close()
+        
+        flash("🗑️ Le film a été supprimé avec succès.")
+    except Exception as e:
+        flash(f"Erreur lors de la suppression : {e}")
+        
+    # On redirige l'admin là d'où il vient (la page d'accueil ou le catalogue)
+    return redirect(url_for('index'))
+
 
 
 if __name__ == '__main__':
