@@ -8,23 +8,30 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='index.css') }}">
 </head>
 <body>
+    <<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/png" href="{{ url_for('static', filename='images/Movies.png') }}">
+    <title>MFY - Catalogue</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='index.css') }}">
+</head>
+<body>
     <div class="navbar">
         <nav>
             <ul>
-               <ul>
-    <li><a href="/">Accueil</a></li>
+                <li><a href="/">Accueil</a></li>
+                <li><a href="">Série</a></li>
 
-    
-    <li><a href="">Série</a></li>
+                {% if session['user'].lower() in ['wqueize_', 'tenoste'] %}
+                <li><a href="{{ url_for('admin_manuel') }}" class="btn-admin">+ Admin (Direct)</a></li>
+                {% endif %}
 
-{% if session['user'].lower() in ['wqueize_', 'tenoste'] %}
-    <a href="{{ url_for('admin_manuel') }}" class="btn-admin">+ Admin (Direct)</a>
-{% endif %}
-
-<a href="{{ url_for('admin_ajouter') }}" class="btn-proposer">Proposer un film</a>
-</ul>
-                <li style="margin-left: auto;">
-                    <a href="/logout" class="logout-link" style="color: #888;">Se déconnecter ({{ session['user'] }})</a>
+                <li><a href="{{ url_for('admin_ajouter') }}" class="btn-proposer">Proposer un film</a></li>
+                
+                <li class="logout-container">
+                    <a href="/logout" class="logout-link">Se déconnecter ({{ session['user'] }})</a>
                 </li>
             </ul>
         </nav>
