@@ -240,35 +240,46 @@ def admin_confirm_deny(movie_id):
 def admin_approve_form(movie_id):
     if not is_admin():
         return "Accès interdit", 403
-    # ... reste du code inchangé ...
     
     if request.method == 'POST':
         nouveau_lien = request.form.get('lien_final')
+        
         conn = get_db_connection()
         cur = conn.cursor()
-        # On met à jour le lien ET on passe le statut en 'approved'
+        
+        # On récupère le titre et l'affiche AVANT d'approuver
+        cur.execute("SELECT titre, affiche FROM films WHERE id = %s", (movie_id,))
+        film = cur.fetchone()
+        
+        # Mise à jour dans la base de données
         cur.execute("UPDATE films SET lien = %s, status = 'approved' WHERE id = %s", (nouveau_lien, movie_id))
         conn.commit()
         cur.close()
         conn.close()
-        return "<h1>✅ Film publié avec succès !</h1><p>Tu peux fermer cette page, le film est maintenant visible sur le catalogue.</p>"
+        
+        # Appel du bot pour le salon des nouveautés
+        if film:
+            BOT_URL = "https://bot-js-l8hi.onrender.com/admin_manuel"
+            try:
+                requests.post(BOT_URL, json={
+                    "titre": film['titre'],
+                    "affiche": film['affiche']
+                }, timeout=5)
+            except Exception as bot_err:
+                print(f"Erreur bot : {bot_err}")
 
-    # Si on arrive sur la page, on affiche un petit formulaire simple
+        return "<h1>✅ Film publié avec succès !</h1><p>Tu peux fermer cette page, le film est sur le catalogue et sur Discord.</p>"
+
     return f'''
         <body style="background: #141414; color: white; font-family: sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh;">
             <form method="post" style="background: #1f1f1f; padding: 30px; border-radius: 10px; border: 1px solid #46d369; text-align: center;">
                 <h2 style="color: #46d369;">Finaliser l'ajout du film</h2>
                 <p>Colle le lien de la vidéo pour valider la proposition :</p>
-                <input type="text" name="lien_final" placeholder="URL de la vidéo (YouTube, Embed...)" 
-                       style="width: 100%; padding: 12px; margin-bottom: 20px; border-radius: 5px; border: none;" required>
-                <br>
-                <button type="submit" style="background: #46d369; color: black; border: none; padding: 12px 25px; border-radius: 5px; font-weight: bold; cursor: pointer;">
-                    Valider et mettre en ligne
-                </button>
+                <input type="text" name="lien_final" placeholder="URL de la vidéo" style="width: 100%; padding: 12px; margin-bottom: 20px;" required>
+                <button type="submit" style="background: #46d369; color: black; border: none; padding: 12px 25px; font-weight: bold; cursor: pointer;">Valider</button>
             </form>
         </body>
     '''
-
 @app.route('/movie/<int:movie_id>')
 def movie_detail(movie_id):
     if 'user' not in session: 
