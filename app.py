@@ -8,12 +8,14 @@ import os
 app = Flask(__name__)
 app.secret_key = "user_securited"
 
-ADMINS = ["wqueize_", "tenoste"]
+# REMPLACE TES LIGNES 11 À 16 PAR CE BLOC :
+
+ADMINS = ["wqueize_", "tenoste", "Wqueize_", "Tenoste"]
 
 def is_admin():
-    if 'user' not in session:
+    if 'user' not in session or not session['user']:
         return False
-    return session['user'].lower() in ADMINS
+    return str(session['user']).lower().strip() in [a.lower() for a in ADMINS]
 
 # --- CONNEXION NEON (PostgreSQL) ---
 DB_URL = "postgresql://neondb_owner:npg_jQVktANW7Y8e@ep-gentle-glitter-aldcjmmp-pooler.c-3.eu-central-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require"
