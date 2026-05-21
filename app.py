@@ -6,21 +6,27 @@ import hashlib
 import os
 
 def recuperer_categorie_film(titre_film):
-    # Clé API publique gratuite TMDB pour chercher un film en Français
     api_key = "a8b792ff410d9c4fb26390a8809beec7" 
-    url_recherche = f"https://api.themoviedb.org/3/search/movie?api_key={api_key}&query={titre_film}&language=fr-FR"
+    # Utilisation de search/multi pour trouver aussi bien les séries (Simpsons) que les films
+    url_recherche = f"https://api.themoviedb.org/3/search/multi?api_key={api_key}&query={requests.utils.quote(titre_film)}&language=fr-FR"
     
     try:
         reponse = requests.get(url_recherche).json()
-        if reponse['results']:
-            id_film = reponse['results'][0]['id']
-            url_details = f"https://api.themoviedb.org/3/movie/{id_film}?api_key={api_key}&language=fr-FR"
+        if reponse.get('results'):
+            premier_resultat = reponse['results'][0]
+            id_media = premier_resultat['id']
+            type_media = premier_resultat.get('media_type', 'movie') # 'movie' ou 'tv'
+
+            if type_media == 'tv':
+                url_details = f"https://api.themoviedb.org/3/tv/{id_media}?api_key={api_key}&language=fr-FR"
+            else:
+                url_details = f"https://api.themoviedb.org/3/movie/{id_media}?api_key={api_key}&language=fr-FR"
+                
             details = requests.get(url_details).json()
-            
-            if details['genres']:
+            if details.get('genres'):
                 return details['genres'][0]['name']
     except Exception as e:
-        print("Erreur recherche catégorie :", e)
+        print("Erreur recherche catégorie multi :", e)
         
     return "Autre"
 
@@ -237,31 +243,34 @@ def admin_confirm_approve(movie_id):
     conn.close()
     return "<h1>❌ Film introuvable.</h1>", 404
 
-@app.route('/admin_approuver/<int:movie_id>', methods=['POST'])
-def admin_approuver(movie_id):
-    if 'user' not in session or not is_admin():
-        flash("🔴 Accès refusé.")
-        return redirect(url_for('index'))
-    
-    try:
-        conn = get_db_connection()
-        cur = conn.cursor()
-        cur.execute("SELECT titre FROM films WHERE id = %s", (movie_id,))
-        film = cur.fetchone()
+@app.route('/admin_approuver/<int:movie_id>', methods=['GET', 'POST'])
+def admin_approuver_request(movie_id):
+    if request.method == 'POST':
+        # On récupère le lien
+        lien_final = request.form.get('lien_final')
         
-        if film:
-            titre_film = film['titre']
-            categorie_auto = recuperer_categorie_film(titre_film)
-            cur.execute("UPDATE films SET status = 'approved', categorie = %s WHERE id = %s", (categorie_auto, movie_id))
-            conn.commit()
-            flash(f"✅ Le film '{titre_film}' a été approuvé et classé dans '{categorie_auto}' !")
+        # LOG : Pour vérifier dans tes logs Render ce qui est reçu
+        print(f"DEBUG: Formulaire reçu pour ID {movie_id}. Lien : {lien_final}")
+
+        if lien_final:
+            try:
+                conn = get_db_connection()
+                cur = conn.cursor(cursor_factory=DictCursor)
+                # Mise à jour
+                cur.execute("UPDATE films SET status = 'approved', lien = %s WHERE id = %s", (lien_final, movie_id))
+                conn.commit()
+                cur.close()
+                conn.close()
+                flash("✅ Succès !")
+                return redirect(url_for('index'))
+            except Exception as e:
+                print(f"Erreur SQL : {e}")
+                return f"Erreur serveur : {e}", 500
         else:
-            flash("❌ Film introuvable.")
-        cur.close()
-        conn.close()
-    except Exception as e:
-        flash("Une erreur est survenue lors de l'approbation.")
-    return redirect(url_for('index'))
+            return "Le lien est vide !", 400
+
+    # Si GET, on affiche le formulaire
+    return render_template('approve_form.html', movie_id=movie_id)
 
 @app.route('/admin_supprimer/<int:movie_id>', methods=['POST'])
 def admin_supprimer(movie_id):
