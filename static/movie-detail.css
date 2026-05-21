@@ -1,0 +1,57 @@
+/* --- STYLE DU DROPDOWN DESCRIPTION --- */
+.movie-description-dropdown {
+    background: #1a1a1a;
+    border: 1px solid #333;
+    border-radius: 4px;
+    margin: 10px 15px; /* Aligné avec tes boutons */
+    text-align: left;
+    overflow: hidden;
+    transition: border-color 0.3s;
+}
+
+.movie-description-dropdown[open] {
+    border-color: #e50914; /* Devient rouge quand il est déplié */
+}
+
+.movie-description-dropdown summary {
+    padding: 10px 15px;
+    font-size: 0.85rem;
+    font-weight: bold;
+    color: #e50914; /* Texte rouge */
+    cursor: pointer;
+    list-style: none; /* Enlève la flèche par défaut */
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    user-select: none;
+}
+
+/* Ajout d'une petite flèche personnalisée à droite */
+.movie-description-dropdown summary::after {
+    content: '▼';
+    font-size: 0.7rem;
+    color: #aaa;
+    transition: transform 0.2s;
+}
+
+/* Rotation de la flèche quand c'est ouvert */
+.movie-description-dropdown[open] summary::after {
+    transform: rotate(180deg);
+    color: #e50914;
+}
+
+/* Zone du texte caché */
+.dropdown-content {
+    padding: 10px 15px;
+    background: #111;
+    border-top: 1px solid #222;
+    max-height: 120px;
+    overflow-y: auto; /* Scroll si la description est géante */
+}
+
+.dropdown-content p {
+    color: #cccccc;
+    font-size: 0.85rem;
+    line-height: 1.4;
+    margin: 0;
+}

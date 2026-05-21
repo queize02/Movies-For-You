@@ -2,7 +2,7 @@
 <html>
 <head>
     <title>{{ film['titre'] }} - MFY</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='index.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='movie-detail.css') }}">
 </head>
 <body style="background: #141414; color: white; font-family: sans-serif; text-align: center; padding-top: 50px;">
     <h1>{{ film['titre'] }}</h1>
@@ -11,8 +11,12 @@
         <iframe width="100%" height="450" src="{{ film['lien'] }}" frameborder="0" allowfullscreen></iframe>
     </div>
 
-    <p style="max-width: 600px; margin: 20px auto; color: #ccc;">{{ film['description'] }}</p>
-
+<details class="movie-description-dropdown">
+    <summary>Voir la description</summary>
+    <div class="dropdown-content">
+        <p>{{ film['description'] }}</p>
+    </div>
+</details>
     <br>
     <a href="{{ url_for('index') }}" style="color: #e50914; text-decoration: none; font-weight: bold;">← Retour au catalogue</a>
 </body>
