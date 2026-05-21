@@ -57,7 +57,7 @@
                     <h3 style="font-size: 1.1rem; margin: 0 0 10px 0; color: white;">{{ film[1] }}</h3>
                     
                     <div style="display: flex; flex-direction: column; gap: 8px; width: 100%;">
-                        <a href="{{ url_for('movie_detail', movie_id=film[0]) }}" class="btn-watch" style="display: block; text-align: center; width: 100%; box-sizing: border-box;">Regarder</a>
+                        <a href="{{ url_for('movie_detail', movie_id=film[0]) }}" class="btn-watch" style="display: block; text-align: center; width: 100%; box-sizing: border-box;"> ▶  Regarder</a>
                         
                         {% if session['user'].lower() in ['wqueize_', 'tenoste'] %}
                         <form action="{{ url_for('admin_supprimer', movie_id=film[0]) }}" method="POST" style="margin: 0; width: 100%;" onsubmit="return confirm('Êtes-vous sûr de vouloir supprimer {{ film[1] }} ?');">

@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Finaliser l'ajout du film</title>
+       <link rel="stylesheet" href="{{ url_for('static', filename='approve_form.css') }}">
+
+</head>
+<body>
+
+    <form method="post">
+        <h2>Finaliser l'ajout du film</h2>
+        <p>Colle le lien de la vidéo pour valider la proposition :</p>
+        <input type="text" name="lien_final" placeholder="URL de la vidéo (YouTube, Embed...)" required>
+        <button type="submit">Valider et mettre en ligne</button>
+    </form>
+
+</body>
+</html>

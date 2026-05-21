@@ -271,16 +271,8 @@ def admin_approve_form(movie_id):
 
         return "<h1>✅ Film publié avec succès !</h1><p>Tu peux fermer cette page, le film est sur le catalogue et sur Discord.</p>"
 
-    return f'''
-        <body style="background: #141414; color: white; font-family: sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh;">
-            <form method="post" style="background: #1f1f1f; padding: 30px; border-radius: 10px; border: 1px solid #46d369; text-align: center;">
-                <h2 style="color: #46d369;">Finaliser l'ajout du film</h2>
-                <p>Colle le lien de la vidéo pour valider la proposition :</p>
-                <input type="text" name="lien_final" placeholder="URL de la vidéo" style="width: 100%; padding: 12px; margin-bottom: 20px;" required>
-                <button type="submit" style="background: #46d369; color: black; border: none; padding: 12px 25px; font-weight: bold; cursor: pointer;">Valider</button>
-            </form>
-        </body>
-    '''
+    # ICI : On renvoie maintenant vers ton fichier HTML dédié !
+    return render_template('approve_form.html')
 @app.route('/movie/<int:movie_id>')
 def movie_detail(movie_id):
     if 'user' not in session: 
