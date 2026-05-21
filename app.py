@@ -5,10 +5,27 @@ from psycopg2.extras import DictCursor
 import hashlib
 import os
 
+def recuperer_categorie_film(titre_film):
+    # Clé API publique gratuite TMDB pour chercher un film en Français
+    api_key = "a8b792ff410d9c4fb26390a8809beec7" 
+    url_recherche = f"https://api.themoviedb.org/3/search/movie?api_key={api_key}&query={titre_film}&language=fr-FR"
+    
+    try:
+        reponse = requests.get(url_recherche).json()
+        if reponse['results']:
+            id_film = reponse['results'][0]['id']
+            url_details = f"https://api.themoviedb.org/3/movie/{id_film}?api_key={api_key}&language=fr-FR"
+            details = requests.get(url_details).json()
+            
+            if details['genres']:
+                return details['genres'][0]['name']
+    except Exception as e:
+        print("Erreur recherche catégorie :", e)
+        
+    return "Autre"
+
 app = Flask(__name__)
 app.secret_key = "user_securited"
-
-# REMPLACE TES LIGNES 11 À 16 PAR CE BLOC :
 
 ADMINS = ["wqueize_", "tenoste", "Wqueize_", "Tenoste"]
 
@@ -17,23 +34,25 @@ def is_admin():
         return False
     return str(session['user']).lower().strip() in [a.lower() for a in ADMINS]
 
+# Rend la fonction accessible dans index.html
+app.jinja_env.globals.update(is_admin=is_admin)
+
 # --- CONNEXION NEON (PostgreSQL) ---
 DB_URL = "postgresql://neondb_owner:npg_jQVktANW7Y8e@ep-gentle-glitter-aldcjmmp-pooler.c-3.eu-central-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require"
 def get_db_connection():
     return psycopg2.connect(DB_URL, cursor_factory=DictCursor)
 
-# --- INITIALISATION DES TABLES ---
 def init_db():
     conn = get_db_connection()
     cur = conn.cursor()
-    # On s'assure que la colonne 'status' existe
     cur.execute('''CREATE TABLE IF NOT EXISTS films (
         id SERIAL PRIMARY KEY, 
         titre TEXT, 
         affiche TEXT, 
         lien TEXT, 
         description TEXT,
-        status TEXT DEFAULT 'pending')''')
+        status TEXT DEFAULT 'pending',
+        categorie TEXT)''') # S'assure que la colonne catégorie existe
     cur.execute('''CREATE TABLE IF NOT EXISTS users (
         id SERIAL PRIMARY KEY, 
         username TEXT UNIQUE, 
@@ -42,7 +61,6 @@ def init_db():
     cur.close()
     conn.close()
 
-# --- CONFIGURATION WEBHOOKS ET API ---
 TMDB_API_KEY = "1dfef7dd68067ec8b05e87b494b9a7f4"
 
 @app.route('/login', methods=['GET', 'POST'])
@@ -61,13 +79,10 @@ def login():
 
         if user:
             session['user'] = user['username']
-            # On retourne la page avec success=True pour afficher ton animation verte actuelle
             return render_template('login.html', success=True)
         else:
-            # --- AJOUT ICI : Le message d'erreur ---
             flash("Identifiant ou mot de passe incorrect.")
             return redirect(url_for('login'))
-
     return render_template('login.html')
 
 @app.route('/register', methods=['GET', 'POST'])
@@ -82,7 +97,6 @@ def register():
             conn.commit()
             cur.close()
             conn.close()
-            # On renvoie vers register.html avec un flag success pour le JS
             return render_template('register.html', success=True)
         except:
             flash("Nom d'utilisateur déjà pris")
@@ -93,12 +107,19 @@ def index():
     if 'user' not in session: return redirect(url_for('login'))
     conn = get_db_connection()
     cur = conn.cursor()
-    # IMPORTANT: On ne montre que les films 'approved'
-    cur.execute("SELECT id, titre, affiche FROM films WHERE status = 'approved'")
-    films = cur.fetchall()
+    cur.execute("SELECT * FROM films WHERE status = 'approved' ORDER BY id DESC")
+    tous_les_films = cur.fetchall()
     cur.close()
     conn.close()
-    return render_template('index.html', films=films)
+    
+    films_par_categorie = {}
+    for film in tous_les_films:
+        cat = film['categorie'] if film['categorie'] else "Autre"
+        if cat not in films_par_categorie:
+            films_par_categorie[cat] = []
+        films_par_categorie[cat].append(film)
+        
+    return render_template('index.html', catalogue_categories=films_par_categorie)
 
 @app.route('/admin_ajouter', methods=['GET', 'POST'])
 def admin_ajouter():
@@ -112,32 +133,25 @@ def admin_ajouter():
         params = {"api_key": TMDB_API_KEY, "query": titre_film, "language": "fr-FR"}
         try:
             response = requests.get("https://api.themoviedb.org/3/search/movie", params=params, timeout=5).json()
-            
-            # 1. On vérifie si TMDB a trouvé quelque chose
             if response.get('results'):
                 film = response['results'][0]
-                
-                # Log de succès dans la console Render
-                print(f"🎬 Film trouvé sur TMDB : {film['title']}")
+                categorie_auto = recuperer_categorie_film(film['title'])
 
-                # 2. On enregistre dans la base de données
                 conn = get_db_connection()
                 cur = conn.cursor()
-                cur.execute("INSERT INTO films (titre, affiche, lien, description, status) VALUES (%s, %s, %s, %s, 'pending') RETURNING id", 
-                             (film['title'], f"https://image.tmdb.org/t/p/w500{film['poster_path']}", lien_temporaire, film['overview']))
+                cur.execute("INSERT INTO films (titre, affiche, lien, description, status, categorie) VALUES (%s, %s, %s, %s, 'pending', %s) RETURNING id", 
+                             (film['title'], f"https://image.tmdb.org/t/p/w500{film['poster_path']}", lien_temporaire, film['overview'], categorie_auto))
                 film_id = cur.fetchone()[0]
                 conn.commit()
                 cur.close()
                 conn.close()
 
-                # 3. On envoie au BOT Discord
                 data_pour_bot = {
                     "titre": film['title'],
                     "user": session['user'],
                     "affiche": f"https://image.tmdb.org/t/p/w500{film['poster_path']}",
                     "film_id": film_id
                 }
-                
                 try:
                     render_url = "https://bot-js-l8hi.onrender.com/nouvelle-suggestion"
                     requests.post(render_url, json=data_pour_bot, timeout=20)
@@ -147,54 +161,43 @@ def admin_ajouter():
                 flash("Merci ! Ta suggestion a été envoyée.")
                 return render_template('admin.html')
             else:
-                # --- C'EST ICI QUE ÇA S'AFFICHE SI LE NOM EST MAUVAIS ---
-                print(f"❌ Aucun film trouvé pour : {titre_film}")
                 flash("Film introuvable sur TMDB. Vérifie l'orthographe !")
-
         except Exception as e:
-            print(f"Erreur générale : {e}")
             flash("Une erreur est survenue lors de l'ajout.")
-            
     return render_template('admin.html')
 
 @app.route('/admin_manuel', methods=['GET', 'POST'])
 def admin_manuel():
-    # On récupère le pseudo en minuscules
     current_user = session.get('user', '').lower()
-    # On met aussi la liste des admins en minuscules pour comparer
     admins_lower = [a.lower() for a in ADMINS]
 
     if 'user' not in session or current_user not in admins_lower:
-        # Ajoute ce flash pour voir si c'est bien un problème de droit
-        flash(f"Accès refusé pour {session.get('user')}. Tu n'es pas dans la liste admin.")
+        flash(f"Accès refusé pour {session.get('user')}.")
         return redirect(url_for('index'))
     
-    # ... reste du code
-    # ... reste du code (if request.method == 'POST' etc.)
     if request.method == 'POST':
         titre = request.form.get('titre')
         lien = request.form.get('lien')
         
-        # On récupère automatiquement l'affiche sur TMDB
         params = {"api_key": TMDB_API_KEY, "query": titre, "language": "fr-FR"}
         try:
             response = requests.get("https://api.themoviedb.org/3/search/movie", params=params).json()
             if response.get('results'):
                 film = response['results'][0]
+                categorie_auto = recuperer_categorie_film(film['title'])
+
                 conn = get_db_connection()
                 cur = conn.cursor()
-                # On insère DIRECTEMENT en 'approved'
-                cur.execute("INSERT INTO films (titre, affiche, lien, description, status) VALUES (%s, %s, %s, %s, 'approved')", 
-                             (film['title'], f"https://image.tmdb.org/t/p/w500{film['poster_path']}", lien, film['overview']))
+                cur.execute("INSERT INTO films (titre, affiche, lien, description, status, categorie) VALUES (%s, %s, %s, %s, 'approved', %s)", 
+                             (film['title'], f"https://image.tmdb.org/t/p/w500{film['poster_path']}", lien, film['overview'], categorie_auto))
                 conn.commit()
                 cur.close()
                 conn.close()
-                flash(f"✅ Film '{film['title']}' ajouté directement !")
+                flash(f"✅ Film '{film['title']}' ({categorie_auto}) ajouté directement !")
                 return redirect(url_for('index'))
         except Exception as e:
             flash(f"Erreur : {e}")
             
-    # Formulaire simple pour l'admin
     return '''
         <body style="background: #141414; color: white; font-family: sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh;">
             <form method="post" style="background: #1f1f1f; padding: 30px; border-radius: 10px; border: 1px solid #e50914; text-align: center; width: 400px;">
@@ -216,108 +219,87 @@ def logout():
 def admin_confirm_approve(movie_id):
     if 'user' not in session or session['user'] not in ADMINS:
         return "Accès interdit", 403
-    conn = get_db_connection()
-    cur = conn.cursor()
-    cur.execute("UPDATE films SET status = 'approved' WHERE id = %s", (movie_id,))
-    conn.commit()
-    cur.close()
-    conn.close()
-    return "<h1>✅ Film approuvé avec succès !</h1><p>Tu peux fermer cette fenêtre.</p>"
-
-@app.route('/admin/deny/<int:movie_id>')
-def admin_confirm_deny(movie_id):
-    if 'user' not in session or session['user'] not in ADMINS:
-        return "Accès interdit", 403
-    conn = get_db_connection()
-    cur = conn.cursor()
-    cur.execute("DELETE FROM films WHERE id = %s", (movie_id,))
-    conn.commit()
-    cur.close()
-    conn.close()
-    return "<h1>❌ Film supprimé.</h1><p>Tu peux fermer cette fenêtre.</p>"
-
-
-@app.route('/admin/approve_form/<int:movie_id>', methods=['GET', 'POST'])
-def admin_approve_form(movie_id):
-    if not is_admin():
-        return "Accès interdit", 403
     
-    if request.method == 'POST':
-        nouveau_lien = request.form.get('lien_final')
-        
-        conn = get_db_connection()
-        cur = conn.cursor()
-        
-        # On récupère le titre et l'affiche AVANT d'approuver
-        cur.execute("SELECT titre, affiche FROM films WHERE id = %s", (movie_id,))
-        film = cur.fetchone()
-        
-        # Mise à jour dans la base de données
-        cur.execute("UPDATE films SET lien = %s, status = 'approved' WHERE id = %s", (nouveau_lien, movie_id))
+    conn = get_db_connection()
+    cur = conn.cursor()
+    cur.execute("SELECT titre FROM films WHERE id = %s", (movie_id,))
+    film = cur.fetchone()
+    
+    if film:
+        categorie_auto = recuperer_categorie_film(film['titre'])
+        cur.execute("UPDATE films SET status = 'approved', categorie = %s WHERE id = %s", (categorie_auto, movie_id))
         conn.commit()
         cur.close()
         conn.close()
+        return f"<h1>✅ Film approuvé et classé dans '{categorie_auto}' !</h1><p>Tu peux fermer cette fenêtre.</p>"
         
-        # Appel du bot pour le salon des nouveautés
-        if film:
-            BOT_URL = "https://bot-js-l8hi.onrender.com/admin_manuel"
-            try:
-                requests.post(BOT_URL, json={
-                    "titre": film['titre'],
-                    "affiche": film['affiche']
-                }, timeout=5)
-            except Exception as bot_err:
-                print(f"Erreur bot : {bot_err}")
-
-        return "<h1>✅ Film publié avec succès !</h1><p>Tu peux fermer cette page, le film est sur le catalogue et sur Discord.</p>"
-
-    # ICI : On renvoie maintenant vers ton fichier HTML dédié !
-    return render_template('approve_form.html')
-@app.route('/movie/<int:movie_id>')
-def movie_detail(movie_id):
-    if 'user' not in session: 
-        return redirect(url_for('login'))
-        
-    conn = get_db_connection()
-    cur = conn.cursor()
-    cur.execute("SELECT * FROM films WHERE id = %s", (movie_id,))
-    film = cur.fetchone()
     cur.close()
     conn.close()
-    
-    if film:
-        # Assure-toi d'avoir un fichier movie_detail.html dans ton dossier templates
-        return render_template('movie_detail.html', film=film)
-    else:
-        flash("Film introuvable.")
-        return redirect(url_for('index'))
+    return "<h1>❌ Film introuvable.</h1>", 404
 
-
-@app.route('/admin_supprimer/<int:movie_id>', methods=['POST'])
-def admin_supprimer(movie_id):
-    # Sécurité : On vérifie si l'utilisateur est connecté et s'il est admin
+@app.route('/admin_approuver/<int:movie_id>', methods=['POST'])
+def admin_approuver(movie_id):
     if 'user' not in session or not is_admin():
-        flash("🔴 Accès refusé : Vous devez être administrateur.")
+        flash("🔴 Accès refusé.")
         return redirect(url_for('index'))
     
     try:
         conn = get_db_connection()
         cur = conn.cursor()
+        cur.execute("SELECT titre FROM films WHERE id = %s", (movie_id,))
+        film = cur.fetchone()
         
-        # Requête SQL pour supprimer le film via son ID
-        cur.execute("DELETE FROM films WHERE id = %s", (movie_id,))
-        conn.commit()
-        
+        if film:
+            titre_film = film['titre']
+            categorie_auto = recuperer_categorie_film(titre_film)
+            cur.execute("UPDATE films SET status = 'approved', categorie = %s WHERE id = %s", (categorie_auto, movie_id))
+            conn.commit()
+            flash(f"✅ Le film '{titre_film}' a été approuvé et classé dans '{categorie_auto}' !")
+        else:
+            flash("❌ Film introuvable.")
         cur.close()
         conn.close()
-        
-        flash("🗑️ Le film a été supprimé avec succès.")
     except Exception as e:
-        flash(f"Erreur lors de la suppression : {e}")
-        
-    # On redirige l'admin là d'où il vient (la page d'accueil ou le catalogue)
+        flash("Une erreur est survenue lors de l'approbation.")
     return redirect(url_for('index'))
 
+@app.route('/admin_supprimer/<int:movie_id>', methods=['POST'])
+def admin_supprimer(movie_id):
+    if 'user' not in session or not is_admin():
+        flash("🔴 Accès refusé.")
+        return redirect(url_for('index'))
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+        cur.execute("DELETE FROM films WHERE id = %s", (movie_id,))
+        conn.commit()
+        cur.close()
+        conn.close()
+        flash("🗑️ Le film a été supprimé.")
+    except Exception as e:
+        flash(f"Erreur : {e}")
+    return redirect(url_for('index'))
+
+@app.route('/movie/<int:movie_id>')
+def voir_film(movie_id):
+    if 'user' not in session: 
+        return redirect(url_for('login'))
+        
+    conn = get_db_connection()
+    # ✅ On utilise directement DictCursor puisqu'il est déjà importé en haut du fichier !
+    cur = conn.cursor(cursor_factory=DictCursor)
+    
+    cur.execute("SELECT * FROM films WHERE id = %s", (movie_id,))
+    film = cur.fetchone()
+    
+    cur.close()
+    conn.close()
+    
+    if film:
+        return render_template('movie_detail.html', film=film)
+    else:
+        flash("Film introuvable.")
+        return redirect(url_for('index'))
 
 
 if __name__ == '__main__':

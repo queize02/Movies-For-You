@@ -46,43 +46,35 @@
         <p>Préparation de votre séance...</p>
     </div>
 
-    <div class="container" style="margin-top: 80px;">
-        <h2>Catalogue</h2>
-        <div class="grid">
-            {% for film in films %}
-            <div class="movie-card" style="display: flex; flex-direction: column; overflow: hidden;">
-                <img src="{{ film[2] }}" alt="Poster de {{ film[1] }}" style="width: 100%; height: 350px; object-fit: cover; display: block;">
-                
-                <div style="padding: 15px; display: flex; flex-direction: column; flex-grow: 1; justify-content: space-between; background: #1a1a1a;">
-                    <h3 style="font-size: 1.1rem; margin: 0 0 10px 0; color: white;">{{ film[1] }}</h3>
-                    
-                    <div style="display: flex; flex-direction: column; gap: 8px; width: 100%;">
-                        <a href="{{ url_for('movie_detail', movie_id=film[0]) }}" class="btn-watch" style="display: block; text-align: center; width: 100%; box-sizing: border-box;"> ▶  Regarder</a>
-                        
-                        {% if session['user'].lower() in ['wqueize_', 'tenoste'] %}
-                        <form action="{{ url_for('admin_supprimer', movie_id=film[0]) }}" method="POST" style="margin: 0; width: 100%;" onsubmit="return confirm('Êtes-vous sûr de vouloir supprimer {{ film[1] }} ?');">
-                            <button type="submit" style="
-                                background-color: #e50914; 
-                                color: white; 
-                                border: none; 
-                                padding: 10px; 
-                                border-radius: 4px; 
-                                font-weight: bold; 
-                                cursor: pointer;
-                                width: 100%;
-                                font-size: 0.9rem;
-                                box-sizing: border-box;
-                                transition: background 0.2s;
-                            " onmouseover="this.style.backgroundColor='#b80710'" onmouseout="this.style.backgroundColor='#e50914'">
-                                🗑️ Supprimer
-                            </button>
-                        </form>
-                        {% endif %}
-                    </div>
+   <div class="container" style="margin-top: 80px; padding: 0 20px;">
+        <h2 style="color: white; font-family: sans-serif; font-size: 2rem; margin-bottom: 20px;">Catalogue</h2>
+        
+        {% for categorie, liste_films in catalogue_categories.items() %}
+            
+            <h3 style="color: white; margin: 45px 0 20px 0; font-size: 1.7rem; text-align: left; border-left: 5px solid #e50914; padding-left: 12px; clear: both; font-family: sans-serif; font-weight: bold;">
+                {{ categorie }}
+            </h3>
 
-                </div>
+            <div class="Catalogue" style="display: flex; flex-wrap: wrap; gap: 25px; justify-content: flex-start; margin-bottom: 40px;">
+                {% for film in liste_films %}
+                    <div class="film-card" style="width: 210px; background: #1f1f1f; border-radius: 8px; padding: 12px; text-align: center; box-shadow: 0 4px 10px rgba(0,0,0,0.4);">
+                        <img src="{{ film['affiche'] }}" alt="Affiche" style="width: 100%; border-radius: 6px; height: 300px; object-fit: cover;">
+                        <h3 style="color: white; font-size: 1.05rem; margin: 12px 0; min-height: 45px; font-family: sans-serif; text-align: center;">{{ film['titre'] }}</h3>
+                        
+                        <div class="buttons" style="display: flex; flex-direction: column; gap: 8px;">
+<a href="{{ url_for('voir_film', movie_id=film['id']) }}" class="btn-watch" style="background: #28a745; color: white; padding: 10px; border-radius: 4px; text-decoration: none; font-weight: bold; display: block; text-align: center;">▶ Regarder</a>
+                            {% if is_admin() %}
+                            <form action="{{ url_for('admin_supprimer', movie_id=film['id']) }}" method="POST" style="margin: 0;">
+                                <button type="submit" class="btn-delete" style="background: #dc3545; color: white; padding: 10px; border-radius: 4px; border: none; width: 100%; cursor: pointer; font-weight: bold;">🗑️ Supprimer</button>
+                            </form>
+                            {% endif %}
+                        </div>
+                    </div>
+                {% endfor %}
             </div>
-            {% endfor %}
+
+        {% endfor %}
+    </div>
         </div>
     </div>
     <script>

@@ -1,23 +1,31 @@
 <!DOCTYPE html>
-<html>
+<html lang="fr">
 <head>
+    <meta charset="UTF-8">
     <title>{{ film['titre'] }} - MFY</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='movie-detail.css') }}">
 </head>
-<body style="background: #141414; color: white; font-family: sans-serif; text-align: center; padding-top: 50px;">
-    <h1>{{ film['titre'] }}</h1>
+<body style="background: #141414; color: white; font-family: sans-serif; text-align: center; padding: 40px 20px;">
     
-    <div style="margin: 30px auto; max-width: 800px;">
-        <iframe width="100%" height="450" src="{{ film['lien'] }}" frameborder="0" allowfullscreen></iframe>
+    <h1 style="font-size: 2.5rem; margin-bottom: 20px; font-weight: bold; color: white;">{{ film['titre'] }}</h1>
+    
+    <div style="margin: 30px auto; max-width: 800px; background: #000; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.8); padding: 10px;">
+        
+        <iframe width="100%" height="450" src="{{ film['lien'] }}" frameborder="0" 
+                sandbox="allow-scripts allow-same-origin allow-forms allow-presentation"
+                allowfullscreen>
+        </iframe>
+                
+   
     </div>
 
-<details class="movie-description-dropdown">
-    <summary>Voir la description</summary>
-    <div class="dropdown-content">
-        <p>{{ film['description'] }}</p>
-    </div>
-</details>
-    <br>
-    <a href="{{ url_for('index') }}" style="color: #e50914; text-decoration: none; font-weight: bold;">← Retour au catalogue</a>
+    <details class="movie-description-dropdown" style="max-width: 800px; margin: 20px auto; text-align: left; background: #1f1f1f; padding: 15px; border-radius: 5px; cursor: pointer;" open>
+        <summary style="font-weight: bold; color: #e50914; font-size: 1.2rem;">Description du film</summary>
+        <div class="dropdown-content" style="margin-top: 15px; color: #bbb; line-height: 1.6;">
+            <p>{{ film['description'] if film['description'] else "Aucune description disponible pour ce film." }}</p>
+        </div>
+    </details>
+    
+    <br><br>
+    <a href="{{ url_for('index') }}" style="color: #e50914; text-decoration: none; font-weight: bold; font-size: 1.1rem; border: 1px solid #e50914; padding: 10px 20px; border-radius: 4px; display: inline-block;">← Retour au catalogue</a>
 </body>
 </html>
