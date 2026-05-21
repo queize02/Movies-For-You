@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/png" href="{{ url_for('static', filename='images/Movies.png') }}">
+    <title>Admin - Ajouter un film</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='admin.css') }}">
+    
+    <style>
+        /* Le style est ici, proprement séparé du HTML */
+        .flash-message {
+            padding: 15px;
+            border-radius: 5px;
+            margin: 100px auto 20px auto; /* 100px pour passer sous la navbar */
+            width: 80%;
+            max-width: 500px;
+            text-align: center;
+            font-weight: bold;
+            color: white;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+        .flash-success { background-color: #46d369; }
+        .flash-error { background-color: #e50914; }
+    </style>
+</head>
+<body>
+    {% with messages = get_flashed_messages() %}
+      {% if messages %}
+        {% for message in messages %}
+          
+          <div class="flash-message {% if 'Merci' in message %}flash-success{% else %}flash-error{% endif %}">
+              {{ message }}
+          </div>
+
+          {% if 'Merci' in message %}
+          <script>
+              setTimeout(function() {
+                  window.location.href = "{{ url_for('index') }}";
+              }, 3000); // Redirige après 3 secondes si c'est un succès
+          </script>
+          {% endif %}
+
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+
+    <div class="admin-container">
+        <h1>Ajouter un nouveau film</h1>
+        <p>Entrez le titre exact, FlixMovies s'occupe de trouver l'affiche !</p>
+        
+        <form class="admin-form" method="POST">
+            <input type="text" name="titre" placeholder="Titre du film (ex: Avatar)" required>
+            <button type="submit" class="btn-submit">PUBLIER SUR LE SITE</button>
+        </form>
+        
+        <a href="/" class="back-link">← Retour au catalogue</a>
+    </div>
+</body>
+</html>
