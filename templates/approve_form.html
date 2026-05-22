@@ -10,8 +10,15 @@
 <body>
 
     <form method="POST" action="{{ url_for('admin_approuver_request', movie_id=movie_id) }}">
-    <input type="text" name="lien_final" placeholder="URL de la vidéo..." required>
-    <button type="submit">Valider</button>
+    <input type="text" name="lien_final" id="lien_final" placeholder="Colle le lien ici">
+<button type="button" onclick="collerLien()">Coller</button>
+
+<script>
+async function collerLien() {
+    const text = await navigator.clipboard.readText();
+    document.getElementById('lien_final').value = text;
+}
+</script>
 </form>
 
 </body>

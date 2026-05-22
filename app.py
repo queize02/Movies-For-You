@@ -146,15 +146,21 @@ def admin_ajouter():
             if response.get('results'):
                 film = response['results'][0]
                 categorie_auto = recuperer_categorie_film(film['title'])
-
+                
+                # --- MODIFICATION ICI ---
                 conn = get_db_connection()
                 cur = conn.cursor()
-                cur.execute("INSERT INTO films (titre, affiche, lien, description, status, categorie) VALUES (%s, %s, %s, %s, 'pending', %s) RETURNING id", 
-                             (film['title'], f"https://image.tmdb.org/t/p/w500{film['poster_path']}", lien_temporaire, film['overview'], categorie_auto))
-                film_id = cur.fetchone()[0]
+                # Dans ton bloc INSERT, ajoute la colonne tmdb_id et la valeur film['id']
+                cur.execute("""
+                    INSERT INTO films (titre, affiche, lien, description, status, categorie, tmdb_id)
+                    VALUES (%s, %s, %s, %s, 'pending', %s, %s) RETURNING id
+                """, (film['title'], f"https://image.tmdb.org/t/p/w500{film['poster_path']}", "auto", film['overview'], categorie_auto, film['id']))
+
+                film_id = cur.fetchone()[0] # Aligné correctement
                 conn.commit()
                 cur.close()
                 conn.close()
+                # ------------------------
 
                 data_pour_bot = {
                     "titre": film['title'],
@@ -162,6 +168,7 @@ def admin_ajouter():
                     "affiche": f"https://image.tmdb.org/t/p/w500{film['poster_path']}",
                     "film_id": film_id
                 }
+                # ... le reste du code (requests.post) reste identique ...
                 try:
                     render_url = "https://bot-js-l8hi.onrender.com/nouvelle-suggestion"
                     requests.post(render_url, json=data_pour_bot, timeout=20)
