@@ -5,6 +5,9 @@ from psycopg2.extras import DictCursor
 import hashlib
 import os
 
+
+
+
 def recuperer_categorie_film(titre_film):
     titre_propre = titre_film.replace(" :", ":").strip()
     # On cherche d'abord pour obtenir l'ID
