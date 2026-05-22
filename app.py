@@ -6,28 +6,24 @@ import hashlib
 import os
 
 def recuperer_categorie_film(titre_film):
-    api_key = "a8b792ff410d9c4fb26390a8809beec7" 
-    # Utilisation de search/multi pour trouver aussi bien les séries (Simpsons) que les films
-    url_recherche = f"https://api.themoviedb.org/3/search/multi?api_key={api_key}&query={requests.utils.quote(titre_film)}&language=fr-FR"
+    # Nettoyage du titre pour éviter les erreurs TMDB
+    titre_propre = titre_film.replace(" :", ":").strip()
+    url_recherche = f"https://api.themoviedb.org/3/search/multi?api_key={TMDB_API_KEY}&query={requests.utils.quote(titre_propre)}&language=fr-FR"
     
     try:
         reponse = requests.get(url_recherche).json()
         if reponse.get('results'):
-            premier_resultat = reponse['results'][0]
-            id_media = premier_resultat['id']
-            type_media = premier_resultat.get('media_type', 'movie') # 'movie' ou 'tv'
-
-            if type_media == 'tv':
-                url_details = f"https://api.themoviedb.org/3/tv/{id_media}?api_key={api_key}&language=fr-FR"
-            else:
-                url_details = f"https://api.themoviedb.org/3/movie/{id_media}?api_key={api_key}&language=fr-FR"
-                
+            res = reponse['results'][0]
+            id_media = res['id']
+            type_media = res.get('media_type', 'movie')
+            
+            url_details = f"https://api.themoviedb.org/3/{'tv' if type_media == 'tv' else 'movie'}/{id_media}?api_key={TMDB_API_KEY}&language=fr-FR"
             details = requests.get(url_details).json()
-            if details.get('genres'):
+            
+            if details.get('genres') and len(details['genres']) > 0:
                 return details['genres'][0]['name']
     except Exception as e:
-        print("Erreur recherche catégorie multi :", e)
-        
+        print(f"DEBUG: Erreur catégorie : {e}")
     return "Autre"
 
 app = Flask(__name__)
@@ -129,14 +125,18 @@ def index():
 
 @app.route('/admin_ajouter', methods=['GET', 'POST'])
 def admin_ajouter():
+    print("DEBUG: Je suis bien dans la fonction admin_ajouter") # AJOUTE CECI
     if 'user' not in session: 
         return redirect(url_for('login'))
     
     if request.method == 'POST':
         titre_film = request.form.get('titre')
+        print(f"DEBUG: Titre reçu : {titre_film}") # Remplace 'titre' par 'titre_film'# AJOUTE CECI
         lien_temporaire = "À définir par l'admin"
         
-        params = {"api_key": TMDB_API_KEY, "query": titre_film, "language": "fr-FR"}
+        # Ajoute le nettoyage ici aussi
+        titre_propre = titre_film.replace(" :", ":").strip()
+        params = {"api_key": TMDB_API_KEY, "query": titre_propre, "language": "fr-FR"}
         try:
             response = requests.get("https://api.themoviedb.org/3/search/movie", params=params, timeout=5).json()
             if response.get('results'):
@@ -182,15 +182,18 @@ def admin_manuel():
         return redirect(url_for('index'))
     
     if request.method == 'POST':
-        titre = request.form.get('titre')
+        titre = request.form.get('titre') # Variable définie ici
         lien = request.form.get('lien')
         
-        params = {"api_key": TMDB_API_KEY, "query": titre, "language": "fr-FR"}
+        # Corrige ici : utilise 'titre' au lieu de 'titre_film'
+        titre_propre = titre.replace(" :", ":").strip()
+        params = {"api_key": TMDB_API_KEY, "query": titre_propre, "language": "fr-FR"}
+        
         try:
             response = requests.get("https://api.themoviedb.org/3/search/movie", params=params).json()
             if response.get('results'):
                 film = response['results'][0]
-                categorie_auto = recuperer_categorie_film(film['title'])
+                categorie_auto = recuperer_categorie_film(film['title']) # <--- OBLIGATOIRE
 
                 conn = get_db_connection()
                 cur = conn.cursor()
@@ -221,55 +224,44 @@ def logout():
     session.pop('user', None)
     return redirect(url_for('login'))
 
-@app.route('/admin/approve/<int:movie_id>')
-def admin_confirm_approve(movie_id):
-    if 'user' not in session or session['user'] not in ADMINS:
-        return "Accès interdit", 403
-    
-    conn = get_db_connection()
-    cur = conn.cursor()
-    cur.execute("SELECT titre FROM films WHERE id = %s", (movie_id,))
-    film = cur.fetchone()
-    
-    if film:
-        categorie_auto = recuperer_categorie_film(film['titre'])
-        cur.execute("UPDATE films SET status = 'approved', categorie = %s WHERE id = %s", (categorie_auto, movie_id))
-        conn.commit()
-        cur.close()
-        conn.close()
-        return f"<h1>✅ Film approuvé et classé dans '{categorie_auto}' !</h1><p>Tu peux fermer cette fenêtre.</p>"
-        
-    cur.close()
-    conn.close()
-    return "<h1>❌ Film introuvable.</h1>", 404
 
 @app.route('/admin_approuver/<int:movie_id>', methods=['GET', 'POST'])
 def admin_approuver_request(movie_id):
+    if 'user' not in session or not is_admin():
+        return "Accès refusé", 403
+
     if request.method == 'POST':
-        # On récupère le lien
         lien_final = request.form.get('lien_final')
+        conn = get_db_connection()
+        cur = conn.cursor(cursor_factory=DictCursor)
         
-        # LOG : Pour vérifier dans tes logs Render ce qui est reçu
-        print(f"DEBUG: Formulaire reçu pour ID {movie_id}. Lien : {lien_final}")
+        cur.execute("SELECT * FROM films WHERE id = %s", (movie_id,))
+        film = cur.fetchone()
+        
+        if film:
+            categorie_auto = recuperer_categorie_film(film['titre'])
+            cur.execute(
+                "UPDATE films SET status = 'approved', lien = %s, categorie = %s WHERE id = %s",
+                (lien_final, categorie_auto, movie_id)
+            )
+            conn.commit()
 
-        if lien_final:
+            # Notification Bot
+            print("DEBUG: Tentative d'envoi de la notification au bot...")
             try:
-                conn = get_db_connection()
-                cur = conn.cursor(cursor_factory=DictCursor)
-                # Mise à jour
-                cur.execute("UPDATE films SET status = 'approved', lien = %s WHERE id = %s", (lien_final, movie_id))
-                conn.commit()
-                cur.close()
-                conn.close()
-                flash("✅ Succès !")
-                return redirect(url_for('index'))
+                reponse = requests.post("https://bot-js-l8hi.onrender.com/admin_manuel", json={
+                    "titre": film['titre'],
+                    "affiche": film['affiche']
+                }, timeout=10)
+                print(f"DEBUG: Réponse du bot : {reponse.status_code}")
             except Exception as e:
-                print(f"Erreur SQL : {e}")
-                return f"Erreur serveur : {e}", 500
-        else:
-            return "Le lien est vide !", 400
+                print(f"DEBUG: Erreur envoi : {e}")
 
-    # Si GET, on affiche le formulaire
+        cur.close()
+        conn.close()
+        return redirect(url_for('index'))
+
+    # CECI DOIT ÊTRE HORS DU 'if POST'
     return render_template('approve_form.html', movie_id=movie_id)
 
 @app.route('/admin_supprimer/<int:movie_id>', methods=['POST'])

@@ -9,7 +9,7 @@
 </head>
 <body>
 
-<form method="POST" action="{{ url_for('admin_approuver_request', movie_id=movie_id) }}">
+    <form method="POST" action="{{ url_for('admin_approuver_request', movie_id=movie_id) }}">
     <input type="text" name="lien_final" placeholder="URL de la vidéo..." required>
     <button type="submit">Valider</button>
 </form>
