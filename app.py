@@ -6,22 +6,26 @@ import hashlib
 import os
 
 def recuperer_categorie_film(titre_film):
-    # Nettoyage du titre pour éviter les erreurs TMDB
     titre_propre = titre_film.replace(" :", ":").strip()
-    url_recherche = f"https://api.themoviedb.org/3/search/multi?api_key={TMDB_API_KEY}&query={requests.utils.quote(titre_propre)}&language=fr-FR"
+    # On cherche d'abord pour obtenir l'ID
+    url_recherche = f"https://api.themoviedb.org/3/search/movie?api_key={TMDB_API_KEY}&query={requests.utils.quote(titre_propre)}&language=fr-FR"
     
     try:
         reponse = requests.get(url_recherche).json()
         if reponse.get('results'):
-            res = reponse['results'][0]
-            id_media = res['id']
-            type_media = res.get('media_type', 'movie')
-            
-            url_details = f"https://api.themoviedb.org/3/{'tv' if type_media == 'tv' else 'movie'}/{id_media}?api_key={TMDB_API_KEY}&language=fr-FR"
+            film_id = reponse['results'][0]['id']
+            # On récupère les détails complets
+            url_details = f"https://api.themoviedb.org/3/movie/{film_id}?api_key={TMDB_API_KEY}&language=fr-FR"
             details = requests.get(url_details).json()
             
-            if details.get('genres') and len(details['genres']) > 0:
-                return details['genres'][0]['name']
+            genres = details.get('genres', [])
+            if genres:
+                # LISTE DES GENRES À ÉVITER COMME PREMIER CHOIX SI POSSIBLE
+                # Parfois "Drame" est mis par défaut. On peut choisir le 2ème s'il existe.
+                if len(genres) > 1 and genres[0]['name'] == "Drame":
+                    return genres[1]['name']
+                return genres[0]['name']
+                
     except Exception as e:
         print(f"DEBUG: Erreur catégorie : {e}")
     return "Autre"
