@@ -2,24 +2,24 @@
 body {
     margin: 0;
     padding: 0;
-    font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
-    background-color: #000000; /* Fond noir Netflix */
+    width: 100%;
+    min-height: 100vh; /* Prend toute la hauteur de l'écran */
     display: flex;
-    justify-content: center;
-    align-items: center;
-    min-height: 100vh;
+    justify-content: center; /* Centre horizontalement */
+    align-items: center;     /* Centre verticalement */
+    background-color: #000000;
+    font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
 }
 
 /* La boîte noire du formulaire */
 .admin-box {
-    width: 100%;
-    max-width: 450px;
-    padding: 60px;
+    width: 90%;          /* S'adapte à 90% sur mobile */
+    max-width: 450px;    /* Max 450px sur PC */
+    padding: 40px;
     background-color: #0e0e0e;
     border-radius: 8px;
-    box-sizing: border-box; /* Important pour que le padding ne déforme pas la boîte */
+    box-sizing: border-box; /* Crucial : empêche le padding de déborder */
 }
-
 h1 {
     color: rgb(225, 225, 225);
     margin-bottom: 28px;
@@ -99,27 +99,27 @@ button[type="submit"]:hover {
 }
 
 /* --- Correction pour mobile --- */
+/* Nettoyage total */
 html, body {
     margin: 0;
     padding: 0;
     width: 100%;
-    min-height: 100vh;
+    min-height: 100vh; /* Force la hauteur de l'écran */
     display: flex;
-    justify-content: center;
-    align-items: center;
+    justify-content: center; /* Centre horizontalement */
+    align-items: center;     /* Centre verticalement */
     background-color: #000000;
 }
 
-/* La boîte doit s'adapter à la largeur sans dépasser */
+/* La boîte noire */
 .admin-box {
-    width: 90%;           /* Prend 90% de la largeur sur mobile */
-    max-width: 450px;     /* Ne dépasse jamais 450px sur PC */
-    padding: 40px;        /* Un peu moins de padding sur petit écran */
+    width: 90%;          /* 90% sur mobile */
+    max-width: 450px;    /* Max 450px sur PC */
+    padding: 40px;
     background-color: #0e0e0e;
     border-radius: 8px;
-    box-sizing: border-box; /* Crucial pour que le padding ne casse pas la largeur */
+    box-sizing: border-box; /* IMPORTANT : empêche le padding de déborder */
 }
-
 /* Les inputs doivent être fluides */
 input[type="text"], 
 input[type="password"] {
