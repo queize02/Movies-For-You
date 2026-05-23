@@ -97,3 +97,33 @@ h1{
     text-decoration: underline;
 }
 
+/* --- Correction pour mobile --- */
+html, body {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background-color: #000000;
+}
+
+/* La boîte doit s'adapter à la largeur sans dépasser */
+.admin-box {
+    width: 90%;           /* Prend 90% de la largeur sur mobile */
+    max-width: 450px;     /* Ne dépasse jamais 450px sur PC */
+    padding: 40px;        /* Un peu moins de padding sur petit écran */
+    background-color: #0e0e0e;
+    border-radius: 8px;
+    box-sizing: border-box; /* Crucial pour que le padding ne casse pas la largeur */
+}
+
+/* Les inputs doivent être fluides */
+input[type="text"], 
+input[type="password"] {
+    width: 100%;
+    height: 50px;
+    box-sizing: border-box; /* Important pour ne pas dépasser */
+    padding: 0 15px;
+}
