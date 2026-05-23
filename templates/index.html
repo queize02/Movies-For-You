@@ -1,11 +1,13 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
+    
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="icon" type="image/png" href="{{ url_for('static', filename='images/Movies.png') }}">
     <title>MFY - Catalogue</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='index.css') }}">
+    <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
 </head>
 <body>
     <!DOCTYPE html>
@@ -104,5 +106,16 @@
     }, 2000);
 </script>
 {% endif %}
+
+
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/static/sw.js')
+        .then(() => console.log('PWA activée !'));
+    });
+  }
+</script>
+
 </body>
 </html>
