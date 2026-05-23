@@ -6,7 +6,23 @@ import hashlib
 import os
 
 
-
+def init_db():
+    conn = get_db_connection()
+    cur = conn.cursor()
+    # Ajoute 'tmdb_id INTEGER' ici
+    cur.execute('''CREATE TABLE IF NOT EXISTS films (
+        id SERIAL PRIMARY KEY, 
+        titre TEXT, 
+        affiche TEXT, 
+        lien TEXT, 
+        description TEXT,
+        status TEXT DEFAULT 'pending',
+        categorie TEXT,
+        tmdb_id INTEGER)''') 
+    # ... reste du code
+    conn.commit()
+    cur.close()
+    conn.close()
 
 def recuperer_categorie_film(titre_film):
     titre_propre = titre_film.replace(" :", ":").strip()
