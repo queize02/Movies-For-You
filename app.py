@@ -331,7 +331,46 @@ def voir_film(movie_id):
     else:
         flash("Film introuvable.")
         return redirect(url_for('index'))
+# Ajoute ceci dans app.py
+@app.route('/api/discord_suggerer', methods=['POST'])
+def api_discord_suggerer():
+    data = request.json
+    titre_film = data.get('titre')
+    user = data.get('user')
+    
+    # Recherche TMDB (copie de la logique de admin_ajouter)
+    params = {"api_key": TMDB_API_KEY, "query": titre_film, "language": "fr-FR"}
+    response = requests.get("https://api.themoviedb.org/3/search/movie", params=params).json()
+    
+    if response.get('results'):
+        film = response['results'][0]
+        categorie_auto = recuperer_categorie_film(film['title'])
+        
+        # Insertion dans Neon
+        conn = get_db_connection()
+        cur = conn.cursor()
+        cur.execute("""
+            INSERT INTO films (titre, affiche, lien, description, status, categorie, tmdb_id)
+            VALUES (%s, %s, %s, %s, 'pending', %s, %s) RETURNING id
+        """, (film['title'], f"https://image.tmdb.org/t/p/w500{film['poster_path']}", "auto", film['overview'], categorie_auto, film['id']))
+        film_id = cur.fetchone()[0]
+        conn.commit()
+        cur.close()
+        conn.close()
+        
+        # Envoi de la notification au bot (via ta route existante)
+        requests.post("https://bot-js-l8hi.onrender.com/nouvelle-suggestion", json={
+            "titre": film['title'],
+            "user": user,
+            "affiche": f"https://image.tmdb.org/t/p/w500{film['poster_path']}",
+            "film_id": film_id
+        })
+        
+        return jsonify({"status": "success", "message": "Suggestion ajoutée"}), 200
+    
+    return jsonify({"status": "error", "message": "Film introuvable"}), 404
 
+    
 
 if __name__ == '__main__':
     with app.app_context():
