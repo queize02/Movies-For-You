@@ -1,26 +1,12 @@
 <!DOCTYPE html>
 <html lang="fr">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Finaliser l'ajout du film</title>
-       <link rel="stylesheet" href="{{ url_for('static', filename='approve_form.css') }}">
-       <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
-
-</head>
-<body>
-
-    <form method="POST" action="{{ url_for('admin_approuver_request', movie_id=movie_id) }}">
-    <input type="text" name="lien_final" id="lien_final" placeholder="Colle le lien ici">
-<button type="button" onclick="collerLien()">Coller</button>
-
-<script>
-async function collerLien() {
-    const text = await navigator.clipboard.readText();
-    document.getElementById('lien_final').value = text;
-}
-</script>
-</form>
-
+<body style="background: #141414; color: white; font-family: sans-serif; padding: 20px;">
+    <h1>Approuver le film</h1>
+    <form action="{{ url_for('admin_approuver_request', movie_id=movie_id) }}" method="POST">
+        <label>Collez le lien Embed (VF) :</label><br>
+        <input type="text" name="lien_final" placeholder="https://vidsrc.to/embed/movie/..." 
+               style="width: 100%; padding: 10px; margin: 10px 0;" required>
+        <button type="submit" style="background: green; color: white; padding: 10px; border: none;">Valider le film</button>
+    </form>
 </body>
 </html>
