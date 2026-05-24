@@ -5,24 +5,8 @@ from psycopg2.extras import DictCursor
 import hashlib
 import os
 
+TMDB_API_KEY = "1dfef7dd68067ec8b05e87b494b9a7f4"
 
-def init_db():
-    conn = get_db_connection()
-    cur = conn.cursor()
-    # Ajoute 'tmdb_id INTEGER' ici
-    cur.execute('''CREATE TABLE IF NOT EXISTS films (
-        id SERIAL PRIMARY KEY, 
-        titre TEXT, 
-        affiche TEXT, 
-        lien TEXT, 
-        description TEXT,
-        status TEXT DEFAULT 'pending',
-        categorie TEXT,
-        tmdb_id INTEGER)''') 
-    # ... reste du code
-    conn.commit()
-    cur.close()
-    conn.close()
 
 def recuperer_categorie_film(titre_film):
     titre_propre = titre_film.replace(" :", ":").strip()
@@ -70,6 +54,7 @@ def get_db_connection():
 def init_db():
     conn = get_db_connection()
     cur = conn.cursor()
+    # Table unique avec toutes les colonnes nécessaires
     cur.execute('''CREATE TABLE IF NOT EXISTS films (
         id SERIAL PRIMARY KEY, 
         titre TEXT, 
@@ -77,7 +62,9 @@ def init_db():
         lien TEXT, 
         description TEXT,
         status TEXT DEFAULT 'pending',
-        categorie TEXT)''') # S'assure que la colonne catégorie existe
+        categorie TEXT,
+        tmdb_id INTEGER)''') 
+    
     cur.execute('''CREATE TABLE IF NOT EXISTS users (
         id SERIAL PRIMARY KEY, 
         username TEXT UNIQUE, 
@@ -85,8 +72,6 @@ def init_db():
     conn.commit()
     cur.close()
     conn.close()
-
-TMDB_API_KEY = "1dfef7dd68067ec8b05e87b494b9a7f4"
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
@@ -370,7 +355,17 @@ def api_discord_suggerer():
     
     return jsonify({"status": "error", "message": "Film introuvable"}), 404
 
-    
+@app.route('/admin/dashboard')
+def admin_dashboard():
+    if not is_admin():
+        return "Accès refusé", 403
+    conn = get_db_connection()
+    cur = conn.cursor(cursor_factory=DictCursor)
+    cur.execute("SELECT * FROM films WHERE status = 'pending'")
+    films_attente = cur.fetchall()
+    cur.close()
+    conn.close()
+    return render_template('admin_dashboard.html', films=films_attente)    
 
 if __name__ == '__main__':
     with app.app_context():
