@@ -12,7 +12,7 @@
 <div style="margin: 30px auto; max-width: 800px; background: #000; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.8); padding: 10px;">
     <iframe 
         id="main-video-player"
-        src="https://vidsrc.to/movie/{{ film.tmdb_id }}" 
+        src="https://www.vidking.net/movie/{{ film.tmdb_id }}" 
         width="100%" 
         height="500px" 
         allow="autoplay; fullscreen; encrypted-media" 
@@ -21,20 +21,15 @@
     </iframe>
 </div>
 
-<div class="source-switcher" style="text-align: center; margin-top: 15px; color: white">
-    <p>La vidéo ne charge pas ? Changez de source :</p> 
-    <button onclick="document.getElementById('main-video-player').src='https://vidlink.pro/movie/{{ film.tmdb_id }}'">Source 1 (VidLink)</button>
-    <button onclick="document.getElementById('main-video-player').src='https://vidsrc.to/embed/movie/{{ film.tmdb_id }}'">Source 2 (VidSrc)</button>
-    <button onclick="document.getElementById('main-video-player').src='https://www.2embed.cc/embed/{{ film.tmdb_id }}'">Source 3 (2Embed)</button>
-</div>
-    <details class="movie-description-dropdown" style="max-width: 800px; margin: 20px auto; text-align: left; background: #1f1f1f; padding: 15px; border-radius: 5px; cursor: pointer;" open>
-        <summary style="font-weight: bold; color: #e50914; font-size: 1.2rem;">Description du film</summary>
-        <div class="dropdown-content" style="margin-top: 15px; color: #bbb; line-height: 1.6;">
-            <p>{{ film['description'] if film['description'] else "Aucune description disponible pour ce film." }}</p>
-        </div>
-    </details>
+<div style="position: relative; width: 100%; max-width: 800px; margin: auto;">
+    <iframe id="main-video-player" src="https://vidlink.pro/movie/{{ film['tmdb_id'] }}" width="100%" height="500px" frameborder="0" allowfullscreen></iframe>
     
-    <br><br>
+    <div style="position: absolute; top: 0; left: 0; width: 100%; height: 450px; cursor: pointer;" 
+         onclick="alert('Veuillez utiliser les contrôles de la vidéo !');">
+    </div>
+</div>
+
+
     <a href="{{ url_for('index') }}" style="color: #e50914; text-decoration: none; font-weight: bold; font-size: 1.1rem; border: 1px solid #e50914; padding: 10px 20px; border-radius: 4px; display: inline-block;">← Retour au catalogue</a>
 </body>
 </html>
