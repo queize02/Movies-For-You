@@ -2,6 +2,7 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
+    <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
     <title>{{ film['titre'] }} - MFY</title>
 </head>
 <body style="background: #141414; color: white; font-family: sans-serif; text-align: center; padding: 40px 20px;">
@@ -10,8 +11,8 @@
     
 <div style="margin: 30px auto; max-width: 800px; background: #000; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.8); padding: 10px;">
     <iframe 
-        id="main-video-player"
-        src="https://www.vidking.net/embed/movie/{{ film['tmdb_id'] }}" 
+        id="video-player"
+        src="https://vidsrc.to/embed/movie/{{ film['tmdb_id'] }}" 
         width="100%" 
         height="500px" 
         allow="autoplay; fullscreen; encrypted-media" 
@@ -19,14 +20,13 @@
         allowfullscreen>
     </iframe>
 </div>
-
-
-    <script>
-        function changeSource(newUrl) {
-            document.getElementById('main-video-player').src = newUrl;
-        }
-    </script>
-
+    <details class="movie-description-dropdown" style="max-width: 800px; margin: 20px auto; text-align: left; background: #1f1f1f; padding: 15px; border-radius: 5px; cursor: pointer;" open>
+        <summary style="font-weight: bold; color: #e50914; font-size: 1.2rem;">Description du film</summary>
+        <div class="dropdown-content" style="margin-top: 15px; color: #bbb; line-height: 1.6;">
+            <p>{{ film['description'] if film['description'] else "Aucune description disponible pour ce film." }}</p>
+        </div>
+    </details>
+    
     <br><br>
     <a href="{{ url_for('index') }}" style="color: #e50914; text-decoration: none; font-weight: bold; font-size: 1.1rem; border: 1px solid #e50914; padding: 10px 20px; border-radius: 4px; display: inline-block;">← Retour au catalogue</a>
 </body>
