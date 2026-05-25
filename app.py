@@ -7,6 +7,9 @@ import os
 
 TMDB_API_KEY = "1dfef7dd68067ec8b05e87b494b9a7f4"
     
+@app.route('/health')
+def health():
+    return "OK", 200
 
 def recuperer_categorie_film(titre_film):
     titre_propre = titre_film.replace(" :", ":").strip()
@@ -366,6 +369,12 @@ def admin_dashboard():
     cur.close()
     conn.close()
     return render_template('admin_dashboard.html', films=films_attente)    
+
+
+
+
+
+
 
 if __name__ == '__main__':
     with app.app_context():
