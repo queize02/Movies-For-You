@@ -10,13 +10,21 @@
     <h1 style="font-size: 2.5rem; margin-bottom: 20px; font-weight: bold; color: white;">{{ film['titre'] }}</h1>
     
 <div style="margin: 30px auto; max-width: 800px; background: #000; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.8); padding: 10px;">
-<iframe 
-    src="https://vidking.net/embed/movie/{{ film['tmdb_id'] }}" 
-    width="100%" 
-    height="500px" 
-    frameborder="0" 
-    allowfullscreen="true" 
-    referrerpolicy="no-referrer"> </iframe>
+<div class="video-container">
+    {% if film.get('lien') and film['lien'] != 'auto' %}
+        <iframe 
+            src="{{ film['lien'] }}" 
+            width="100%" 
+            height="500px" 
+            frameborder="0" 
+            allowfullscreen="true" 
+            sandbox="allow-forms allow-scripts allow-same-origin allow-presentation"
+            referrerpolicy="no-referrer"> 
+        </iframe>
+    {% else %}
+        <p style="color: white; padding: 20px;">Aucun lecteur manuel n'est configuré pour ce film.</p>
+    {% endif %}
+</div>
 </div>
     <details class="movie-description-dropdown" style="max-width: 800px; margin: 20px auto; text-align: left; background: #1f1f1f; padding: 15px; border-radius: 5px; cursor: pointer;" open>
         <summary style="font-weight: bold; color: #e50914; font-size: 1.2rem;">Description du film</summary>
