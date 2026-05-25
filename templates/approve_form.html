@@ -2,11 +2,14 @@
 <html lang="fr">
 <body style="background: #141414; color: white; font-family: sans-serif; padding: 20px;">
     <h1>Approuver le film</h1>
-    <form action="{{ url_for('admin_approuver_request', movie_id=movie_id) }}" method="POST">
-        <label>Collez le lien Embed (VF) :</label><br>
-        <input type="text" name="lien_final" placeholder="https://vidsrc.to/embed/movie/..." 
-               style="width: 100%; padding: 10px; margin: 10px 0;" required>
-        <button type="submit" style="background: green; color: white; padding: 10px; border: none;">Valider le film</button>
-    </form>
+<form action="{{ url_for('admin_approuver_request', movie_id=movie_id) }}" method="POST">
+    <label>Lien Embed (VF) :</label><br>
+    
+    <input type="text" name="lien_final" 
+           value="vsembed.ru/embed/movie/{{ tmdb_id }}" 
+           style="width: 100%; padding: 10px;" required>
+           
+    <button type="submit">Valider et Publier</button>
+</form>
 </body>
 </html>

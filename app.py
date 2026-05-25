@@ -6,7 +6,7 @@ import hashlib
 import os
 
 TMDB_API_KEY = "1dfef7dd68067ec8b05e87b494b9a7f4"
-
+    
 
 def recuperer_categorie_film(titre_film):
     titre_propre = titre_film.replace(" :", ":").strip()
@@ -245,13 +245,15 @@ def admin_approuver_request(movie_id):
     if 'user' not in session or not is_admin():
         return "Accès refusé", 403
 
+    conn = get_db_connection()
+    cur = conn.cursor(cursor_factory=DictCursor)
+
+    # 1. On récupère le film pour avoir son tmdb_id
+    cur.execute("SELECT * FROM films WHERE id = %s", (movie_id,))
+    film = cur.fetchone()
+
     if request.method == 'POST':
         lien_final = request.form.get('lien_final')
-        conn = get_db_connection()
-        cur = conn.cursor(cursor_factory=DictCursor)
-        
-        cur.execute("SELECT * FROM films WHERE id = %s", (movie_id,))
-        film = cur.fetchone()
         
         if film:
             categorie_auto = recuperer_categorie_film(film['titre'])
@@ -271,14 +273,12 @@ def admin_approuver_request(movie_id):
                 print(f"DEBUG: Réponse du bot : {reponse.status_code}")
             except Exception as e:
                 print(f"DEBUG: Erreur envoi : {e}")
-
         cur.close()
         conn.close()
         return redirect(url_for('index'))
 
-    # CECI DOIT ÊTRE HORS DU 'if POST'
-    return render_template('approve_form.html', movie_id=movie_id)
-
+    return render_template('approve_form.html', movie_id=movie_id, tmdb_id=film['tmdb_id'])      
+ 
 @app.route('/admin_supprimer/<int:movie_id>', methods=['POST'])
 def admin_supprimer(movie_id):
     if 'user' not in session or not is_admin():
