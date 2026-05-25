@@ -16,7 +16,7 @@
                 <li><a href="/">Accueil</a></li>
                 <li><a href="">Série</a></li>
                 {% if session['user'].lower() in ['wqueize_', 'tenoste'] %}
-                <li><a href="{{ url_for('admin_manuel') }}" class="btn-admin">+ Admin (Direct)</a></li>
+                <li><a href="{{ url_for('admin_dashboard') }}" class="btn-admin">+ Admin (Direct)</a></li>
                 {% endif %}
                 <li><a href="{{ url_for('admin_ajouter') }}" class="btn-proposer">Proposer un film</a></li>
                 <li class="logout-container">

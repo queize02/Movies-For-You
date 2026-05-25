@@ -215,81 +215,30 @@ padding-left: 20px;
     margin-left: auto;
 }
 
-@media (max-width: 768px) {
-    /* On empile les éléments de la navbar s'il n'y a plus de place */
-    .navbar nav ul {
-        flex-wrap: wrap;
-        justify-content: center;
-        gap: 12px;
-    }
-
-    /* On force le bouton de déconnexion à se recentrer sur mobile */
-    .navbar nav ul li.logout-container {
-        margin-left: 0;
-        width: 100%;
-        text-align: center;
-        margin-top: 5px;
-    }
-
-    /* On réduit un chouia la taille des gros boutons sur mobile */
-    .btn-admin, .btn-proposer {
-        padding: 8px 12px !important;
-        font-size: 0.85rem !important;
-    }
-
-    /* On augmente l'espace en haut du catalogue car la navbar prend plus de hauteur sur mobile */
-    .container {
-        padding-top: 150px !important;
-    }
+.films-grid {
+    display: flex;             
+    flex-direction: row;       /* Force la ligne */
+    overflow-x: auto;          /* Scroll horizontal */
+    gap: 15px;                 
+    padding-bottom: 20px;
+    -webkit-overflow-scrolling: touch; /* Fluidité sur mobile */
 }
 
-/* --- RESET --- */
-* {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-}
-
-html, body {
-    width: 100%;
-    background-color: #050505;
-    color: white;
-    font-family: sans-serif;
-    overflow-x: hidden;
-}
-
-/* --- CATALOGUE --- */
-.container {
-    padding: 100px 4% 40px 4%;
-}
-
-.Catalogue {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 25px;
-    justify-content: flex-start;
-}
+.films-container::-webkit-scrollbar { display: none; } /* Cache scrollbar Chrome */
 
 .film-card {
-    width: 210px;
+    flex: 0 0 auto !important;
+    width: 140px;             /* Largeur par défaut */
     background: #1f1f1f;
     border-radius: 8px;
-    padding: 12px;
+    padding: 10px;
 }
 
-/* --- MOBILE RESPONSIVE --- */
 @media (max-width: 768px) {
-    .Catalogue {
-        justify-content: center;
-    }
-    
     .film-card {
-        width: 90%; /* Prend presque toute la largeur sur téléphone */
-        max-width: 300px;
-    }
-
-    .navbar nav ul {
-        flex-wrap: wrap;
-        justify-content: center;
+        width: 120px;         /* Largeur mobile */
     }
 }
+
+
+
