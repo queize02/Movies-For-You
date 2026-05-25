@@ -5,11 +5,13 @@ from psycopg2.extras import DictCursor
 import hashlib
 import os
 
-TMDB_API_KEY = "1dfef7dd68067ec8b05e87b494b9a7f4"
-    
+app = Flask(__name__)
+
 @app.route('/health')
 def health():
     return "OK", 200
+TMDB_API_KEY = "1dfef7dd68067ec8b05e87b494b9a7f4"
+    
 
 def recuperer_categorie_film(titre_film):
     titre_propre = titre_film.replace(" :", ":").strip()
@@ -75,6 +77,8 @@ def init_db():
     conn.commit()
     cur.close()
     conn.close()
+
+    
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
