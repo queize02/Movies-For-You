@@ -35,26 +35,43 @@ def extraire_iframe(url):
             except Exception:
                 print("Pas de bouton 'Lecture' détecté, on continue...")
 
-            print("\n⏳ Étape 3 : Attente de l'apparition de l'iframe de la vidéo...")
+            print("\n⏳ Étape 3 : Attente de l'apparition de la vidéo par défaut...")
+            try:
+                page.wait_for_selector("iframe", timeout=20000)
+            except:
+                pass
             
-            iframe_element = page.wait_for_selector("iframe", timeout=45000)
+            # --- PAUSE INTERACTIVE POUR L'UTILISATEUR ---
+            print("\n" + "="*60)
+            print("⏸️ LE SCRIPT EST EN PAUSE")
+            print("="*60)
+            print("Si la vidéo par défaut (ex: Vidzy) ne marche pas :")
+            print("1. Regardez la fenêtre du navigateur ouverte.")
+            print("2. Changez de source manuellement (ex: LuluStream, VidMoly...).")
+            print("3. Une fois que la vidéo fonctionne à l'écran...")
+            print("="*60)
+            
+            input("\n👉 APPUYEZ SUR [ENTRÉE] ICI POUR EXTRAIRE LE LIEN ACTUEL : ")
+            
+            # On extrait l'iframe qui est PRÉSENTE MAINTENANT sur la page
+            iframe_element = page.query_selector("iframe")
             
             if iframe_element:
                 src = iframe_element.get_attribute("src")
                 print("\n" + "="*50)
-                print("✅ Iframe trouvée avec succès !")
+                print("✅ Iframe extraite avec succès !")
                 print(f"🔗 Lien : {src}")
                 print("="*50 + "\n")
                 return src
             else:
-                print("\n❌ Aucune iframe trouvée sur cette page.")
+                print("\n❌ Aucune iframe trouvée sur la page actuelle.")
                 return None
                 
         except Exception as e:
             print(f"\n❌ Erreur lors de l'extraction : {e}")
             return None
         finally:
-            page.wait_for_timeout(3000) 
+            page.wait_for_timeout(2000) 
             browser.close()
 
 if __name__ == "__main__":
@@ -62,7 +79,6 @@ if __name__ == "__main__":
     print("🤖 EXTRACTEUR D'IFRAME MOVIX")
     print("="*50)
     
-    # Le script va maintenant vous demander de taper l'URL
     url_utilisateur = input("👉 Collez l'URL du film ici (puis appuyez sur Entrée) : ").strip()
     
     if url_utilisateur:

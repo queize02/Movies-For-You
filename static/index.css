@@ -174,7 +174,7 @@ html, body {
 }
 
 .btn-proposer{
-       background-color: #e50914;
+       background-color: #2cff02;
     color: white;
     padding: 10px 15px;
     border-radius: 4px;
@@ -260,8 +260,43 @@ padding-left: 20px;
         flex: 0 0 140px !important;
         width: 140px !important;
     }
+
+    .btn-admin {
+        padding: 2px 8px !important;
+        font-size: 0.8rem !important;
+         border: 3px solid #e50914 !important;
+         display: block !important;
+
+    }
+
+        .btn-proposer {
+        padding: 2px 8px !important;
+        font-size: 0.8rem !important;
+         background-color: rgb(31, 198, 36) !important;
+         display: block !important;
+         
+    }
+    .navbar nav ul {
+        flex-direction: row !important;
+        gap: 12px !important;
+    }
+
     .film-card img {
         height: 200px !important;
     }
+    .logout-link {
+    color: #ffffff !important;
+    display: flex !important;
+     padding: 1px 4px !important;
+     font-size: 10px !important;
+     background-color: #ff0505 !important;
+     border-radius: 4px !important;
+}
+
+.navbar{
+    padding: 15px 12px !important;
+    
+
 }
 /* --- CATALOGUE HORIZONTAL FORCE --- */
+}
