@@ -5,6 +5,8 @@
     box-sizing: border-box; /* Important pour que les paddings ne cassent pas la largeur */
 }
 
+
+
 html, body {
     width: 100%;
     height: 100%;
@@ -140,6 +142,8 @@ html, body {
     height: auto;
 }
 
+
+
 /* --- SCROLLBAR --- */
 ::-webkit-scrollbar {
     width: 8px;
@@ -215,56 +219,28 @@ padding-left: 20px;
     margin-left: auto;
 }
 
-.films-grid {
-    display: flex;             
-    flex-direction: row;       /* Force la ligne */
-    overflow-x: auto;          /* Scroll horizontal */
-    gap: 15px;                 
-    padding-bottom: 20px;
-    -webkit-overflow-scrolling: touch; /* Fluidité sur mobile */
-}
 
-.films-container::-webkit-scrollbar { display: none; } /* Cache scrollbar Chrome */
 
-.film-card {
-    flex: 0 0 auto !important;
-    width: 140px;             /* Largeur par défaut */
-    background: #1f1f1f;
-    border-radius: 8px;
-    padding: 10px;
-}
+.films-container::-webkit-scrollbar { display: f; } /* Cache scrollbar Chrome */
+
+
 
 /* --- NAVBAR MOBILE --- */
-@media (max-width: 768px) {
-    .navbar nav ul {
-        flex-wrap: wrap !important; /* Autorise le retour à la ligne du menu */
-        justify-content: center;
-        gap: 10px;
-    }
-    
-    .logout-container {
-        width: 100%;
-        text-align: center;
-        margin-left: 0 !important;
-        margin-top: 10px;
-    }
-}
-
 /* --- CATALOGUE HORIZONTAL FORCE --- */
 .films-grid {
     display: flex !important;
     flex-direction: row !important;
-    flex-wrap: nowrap !important;
-    overflow-x: auto !important;
-    gap: 15px;
-    padding-bottom: 20px;
-    -webkit-overflow-scrolling: touch;
-    width: 100%;
+    flex-wrap: nowrap !important; /* Force la ligne unique */
+    overflow-x: auto !important;  /* Active le défilement horizontal */
+    width: 100% !important;
+    gap: 20px !important;
+    padding: 20px 0 !important;
+    align-items: flex-start;
 }
 
 .film-card {
-    flex: 0 0 140px !important; /* Fixe la largeur à 140px */
-    width: 140px !important;
+    flex: 0 0 200px !important; /* Largeur fixe sur PC */
+    width: 200px !important;
     background: #1f1f1f;
     border-radius: 8px;
     padding: 10px;
@@ -273,8 +249,19 @@ padding-left: 20px;
 
 .film-card img {
     width: 100% !important;
-    height: 180px !important;
+    height: 280px !important;
     object-fit: cover;
     border-radius: 4px;
-    display: block;
 }
+
+/* --- VERSION MOBILE --- */
+@media (max-width: 768px) {
+    .film-card {
+        flex: 0 0 140px !important;
+        width: 140px !important;
+    }
+    .film-card img {
+        height: 200px !important;
+    }
+}
+/* --- CATALOGUE HORIZONTAL FORCE --- */
