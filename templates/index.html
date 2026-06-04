@@ -63,6 +63,14 @@
     </div>
 
     <script>
+        // Au lieu de faire des requêtes complexes, tu fais simplement :
+fetch('https://api.moviesforyou.fr/api/films')
+  .then(response => response.json())
+  .then(data => {
+      // data contient maintenant la liste de tes films venus de la base NAS
+      console.log(data);
+      afficherFilms(data); 
+  });
         window.addEventListener('load', function() {
             const loader = document.getElementById('loader');
             setTimeout(() => {

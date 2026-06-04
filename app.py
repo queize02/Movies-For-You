@@ -5,6 +5,13 @@ from psycopg2.extras import DictCursor
 import hashlib
 import os
 
+
+def get_db_connection():
+    # On utilise la variable d'environnement définie dans ton docker-compose.yml
+    # Si elle est absente, on met les paramètres de ton conteneur local :
+    database_url = 'postgresql://admin:02082008@192.168.1.13:5432/neondb'
+    return psycopg2.connect(database_url)
+
 app = Flask(__name__)
 
 @app.route('/health')
@@ -52,9 +59,7 @@ def is_admin():
 app.jinja_env.globals.update(is_admin=is_admin)
 
 # --- CONNEXION NEON (PostgreSQL) ---
-DB_URL = "postgresql://neondb_owner:npg_jQVktANW7Y8e@ep-gentle-glitter-aldcjmmp-pooler.c-3.eu-central-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require"
-def get_db_connection():
-    return psycopg2.connect(DB_URL, cursor_factory=DictCursor)
+
 
 def init_db():
     conn = get_db_connection()
@@ -88,19 +93,22 @@ def login():
         hashed_password = hashlib.sha256(password.encode()).hexdigest()
 
         conn = get_db_connection()
-        cur = conn.cursor()
+        # MODIFICATION ICI : Ajoute cursor_factory=DictCursor
+        cur = conn.cursor(cursor_factory=DictCursor) 
         cur.execute("SELECT * FROM users WHERE username = %s AND password = %s", (username, hashed_password))
         user = cur.fetchone()
         cur.close()
         conn.close()
 
         if user:
-            session['user'] = user['username']
+            # Maintenant que le curseur est DictCursor, cela fonctionnera :
+            session['user'] = user['username'] 
             return render_template('login.html', success=True)
         else:
             flash("Identifiant ou mot de passe incorrect.")
             return redirect(url_for('login'))
     return render_template('login.html')
+
 
 @app.route('/register', methods=['GET', 'POST'])
 def register():
@@ -123,7 +131,7 @@ def register():
 def index():
     if 'user' not in session: return redirect(url_for('login'))
     conn = get_db_connection()
-    cur = conn.cursor()
+    cur = conn.cursor(cursor_factory=DictCursor) # FIX
     cur.execute("SELECT * FROM films WHERE status = 'approved' ORDER BY id DESC")
     tous_les_films = cur.fetchall()
     cur.close()
@@ -140,58 +148,41 @@ def index():
 
 @app.route('/admin_ajouter', methods=['GET', 'POST'])
 def admin_ajouter():
-    print("DEBUG: Je suis bien dans la fonction admin_ajouter") # AJOUTE CECI
-    if 'user' not in session: 
-        return redirect(url_for('login'))
+    if 'user' not in session: return redirect(url_for('login'))
     
     if request.method == 'POST':
         titre_film = request.form.get('titre')
-        print(f"DEBUG: Titre reçu : {titre_film}") # Remplace 'titre' par 'titre_film'# AJOUTE CECI
-        lien_temporaire = "À définir par l'admin"
-        
-        # Ajoute le nettoyage ici aussi
-        titre_propre = titre_film.replace(" :", ":").strip()
-        params = {"api_key": TMDB_API_KEY, "query": titre_propre, "language": "fr-FR"}
+        params = {"api_key": TMDB_API_KEY, "query": titre_film.strip(), "language": "fr-FR"}
         try:
             response = requests.get("https://api.themoviedb.org/3/search/movie", params=params, timeout=5).json()
             if response.get('results'):
                 film = response['results'][0]
                 categorie_auto = recuperer_categorie_film(film['title'])
                 
-                # --- MODIFICATION ICI ---
                 conn = get_db_connection()
-                cur = conn.cursor()
-                # Dans ton bloc INSERT, ajoute la colonne tmdb_id et la valeur film['id']
+                cur = conn.cursor(cursor_factory=DictCursor)
                 cur.execute("""
                     INSERT INTO films (titre, affiche, lien, description, status, categorie, tmdb_id)
                     VALUES (%s, %s, %s, %s, 'pending', %s, %s) RETURNING id
                 """, (film['title'], f"https://image.tmdb.org/t/p/w500{film['poster_path']}", "auto", film['overview'], categorie_auto, film['id']))
-
-                film_id = cur.fetchone()[0] # Aligné correctement
+                
+                film_id = cur.fetchone()['id'] # Utilisation du dictionnaire
                 conn.commit()
                 cur.close()
                 conn.close()
-                # ------------------------
 
-                data_pour_bot = {
+                # Appel au Bot
+                requests.post("https://bot-js-l8hi.onrender.com/nouvelle-suggestion", json={
                     "titre": film['title'],
                     "user": session['user'],
-                    "affiche": f"https://image.tmdb.org/t/p/w500{film['poster_path']}",
-                    "film_id": film_id
-                }
-                # ... le reste du code (requests.post) reste identique ...
-                try:
-                    render_url = "https://bot-js-l8hi.onrender.com/nouvelle-suggestion"
-                    requests.post(render_url, json=data_pour_bot, timeout=20)
-                except Exception as e:
-                    print(f"Erreur d'envoi au Bot : {e}")
-
+                    "affiche": f"https://image.tmdb.org/t/p/w500{film['poster_path']}"
+                }, timeout=10)
+                
                 flash("Merci ! Ta suggestion a été envoyée.")
                 return render_template('admin.html')
-            else:
-                flash("Film introuvable sur TMDB. Vérifie l'orthographe !")
         except Exception as e:
-            flash("Une erreur est survenue lors de l'ajout.")
+            print(f"DEBUG: Erreur ajout : {e}")
+            flash("Une erreur est survenue.")
     return render_template('admin.html')
 
 @app.route('/admin_manuel', methods=['GET', 'POST'])
@@ -309,6 +300,7 @@ def voir_film(movie_id):
         return redirect(url_for('login'))
         
     conn = get_db_connection()
+    
     # ✅ On utilise directement DictCursor puisqu'il est déjà importé en haut du fichier !
     cur = conn.cursor(cursor_factory=DictCursor)
     
@@ -376,6 +368,7 @@ def admin_dashboard():
 
 
 
+    
 
 
 
@@ -383,4 +376,4 @@ def admin_dashboard():
 if __name__ == '__main__':
     with app.app_context():
         init_db()
-    app.run(debug=True)
+app.run(host='0.0.0.0', port=5000, debug=True)
