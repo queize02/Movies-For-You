@@ -5,11 +5,20 @@
 <form action="{{ url_for('admin_approuver_request', movie_id=movie_id) }}" method="POST">
     <label>Lien Embed (VF) :</label><br>
     
-    <input type="text" name="lien_final" 
-           value="" 
-           style="width: 100%; padding: 10px;" required>
+    {% if media_type == 'tv' %}
+        <p style="color: #46d369; font-size: 0.9em;">🟢 Il s'agit d'une série. Laissez ce champ vide (les épisodes seront générés automatiquement).</p>
+        <input type="text" name="lien_final" 
+               value="" 
+               style="width: 100%; padding: 10px; background: #333; color: white; border: 1px solid #46d369;">
+    {% else %}
+        <p style="color: #e50914; font-size: 0.9em;">🔴 Il s'agit d'un film. Le lien de votre extracteur est obligatoire.</p>
+        <input type="text" name="lien_final" 
+               value="" 
+               style="width: 100%; padding: 10px; background: #fff; color: black; border: 1px solid #e50914;" required>
+    {% endif %}
            
-    <button type="submit">Valider et Publier</button>
+    <br><br>
+    <button type="submit" style="padding: 10px 20px; background: #e50914; color: white; border: none; font-weight: bold; cursor: pointer;">Valider et Publier</button>
 </form>
 </body>
 </html>
