@@ -7,11 +7,9 @@ import os
 
 
 def get_db_connection():
-    # On utilise la variable d'environnement définie dans ton docker-compose.yml
-    # Si elle est absente, on met les paramètres de ton conteneur local :
-    database_url = 'postgresql://admin:02082008@192.168.1.13:5432/neondb'
+    # Assure-toi que la ligne ci-dessous a exactement 4 espaces d'indentation !
+    database_url = 'postgresql://admin:02082008@postgres_db:5432/neondb'
     return psycopg2.connect(database_url)
-
 app = Flask(__name__)
 
 @app.route('/health')
