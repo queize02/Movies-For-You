@@ -18,7 +18,6 @@
             height="500px" 
             frameborder="0" 
             allowfullscreen="true" 
-            sandbox="allow-scripts allow-same-origin"
             referrerpolicy="no-referrer"> 
         </iframe>
     {% else %}
@@ -28,7 +27,6 @@
             height="500px" 
             frameborder="0" 
             allowfullscreen="true" 
-            sandbox="allow-scripts allow-same-origin"
             referrerpolicy="no-referrer"> 
         </iframe>
     {% endif %}
@@ -39,8 +37,8 @@
     <select id="episode-select" style="padding: 12px; background: #333; color: white; border: 2px solid #e50914; border-radius: 6px; font-size: 1.1rem; cursor: pointer;"></select>
 </div>
 <script>
-    const tmdb_id = "{{ film['tmdb_id'] }}";
-    const db_id = "{{ film['id'] }}";
+    const tmdb_id = {{ film['tmdb_id'] }};
+    const db_id = {{ film['id'] }};
     const TMDB_API_KEY = "1dfef7dd68067ec8b05e87b494b9a7f4";
     const iframe = document.getElementById('video-player');
     
