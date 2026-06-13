@@ -7,8 +7,11 @@ import os
 
 
 def get_db_connection():
-    # Assure-toi que la ligne ci-dessous a exactement 4 espaces d'indentation !
-    database_url = 'postgresql://admin:02082008@postgres_db:5432/neondb'
+    # Force la lecture de la variable, si elle est absente, cela lèvera une erreur 
+    # explicite plutôt que d'essayer de se connecter avec l'utilisateur "user"
+    database_url = os.environ.get('DATABASE_URL')
+    if not database_url:
+        raise ValueError("La variable d'environnement DATABASE_URL n'est pas définie !")
     return psycopg2.connect(database_url)
 app = Flask(__name__)
 

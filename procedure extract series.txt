@@ -1,0 +1,20 @@
+Prérequis :
+
+Avoir ton PC avec ton dossier de projet (ton script, ton venv et playwright).
+
+Avoir un accès internet.
+
+Avoir les identifiants de ton NAS (IP, login, mot de passe).
+
+La procédure quand tu es dehors :
+
+Étape A (Le pont) : Ouvre un terminal (CMD ou PowerShell) sur ton PC et lance la commande de tunnel SSH pour te relier à ton NAS :
+
+Bash
+ssh -L 5432:172.22.0.3:5432 root@192.168.1.13
+(Note : Si tu n'es pas sur ton réseau local, remplace 192.168.1.13 par l'adresse IP publique de ta box ou ton nom de domaine DDNS).
+
+Étape B (L'action) : Laisse cette fenêtre ouverte, ouvre ton éditeur (VS Code) ou un autre terminal, et lance ton script :
+
+Bash
+python extract_season.py

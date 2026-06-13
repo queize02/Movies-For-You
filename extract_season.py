@@ -4,8 +4,7 @@ import psycopg2
 import sys
 
 # URL de connexion à la base de données (identique à app.py)
-DB_URL = 'postgresql://admin:02082008@192.168.1.13:5432/neondb'
-
+DB_URL = 'postgresql://admin:02082008@localhost:5432/neondb'
 def extract_episode(page, url):
     print(f"\nChargement de : {url} ...")
     try:
