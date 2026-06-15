@@ -36,15 +36,12 @@
     <select id="season-select" style="padding: 12px; background: #333; color: white; border: 2px solid #e50914; border-radius: 6px; font-size: 1.1rem; cursor: pointer;"></select>
     <select id="episode-select" style="padding: 12px; background: #333; color: white; border: 2px solid #e50914; border-radius: 6px; font-size: 1.1rem; cursor: pointer;"></select>
 </div>
+<div id="movie-data" data-tmdb-id="{{ film.tmdb_id }}" data-db-id="{{ film.id }}" style="display:none;"></div>
 <script>
-    const tmdb_id = {{ film['tmdb_id'] }};
-    const db_id = {{ film['id'] }};
-    const TMDB_API_KEY = "1dfef7dd68067ec8b05e87b494b9a7f4";
+    const movieData = document.getElementById('movie-data');
+    const tmdb_id = movieData.dataset.tmdbId;
+    const db_id = movieData.dataset.dbId;
     const iframe = document.getElementById('video-player');
-    
-    let db_episodes = {};
-    
-    // Charger les liens VF extraits depuis la base de données
     fetch(`/api/episodes/${db_id}`)
         .then(res => res.json())
         .then(data => {
