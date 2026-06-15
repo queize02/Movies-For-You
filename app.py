@@ -4,17 +4,13 @@ import psycopg2
 from psycopg2.extras import DictCursor
 import hashlib
 import os
-
-
+DATABASE_URL = "postgresql://admin:02082008@192.168.1.13:5432/neondb"
 def get_db_connection():
-    # Force la lecture de la variable, si elle est absente, cela lèvera une erreur 
-    # explicite plutôt que d'essayer de se connecter avec l'utilisateur "user"
-    database_url = os.environ.get('DATABASE_URL')
-    if not database_url:
-        raise ValueError("La variable d'environnement DATABASE_URL n'est pas définie !")
+    # On cherche la variable, si elle n'existe pas, on prend DATABASE_URL définie en haut
+    database_url = os.environ.get('DATABASE_URL', DATABASE_URL)
     return psycopg2.connect(database_url)
 app = Flask(__name__)
-
+ 
 @app.route('/health')
 def health():
     return "OK", 200
@@ -204,11 +200,20 @@ def admin_ajouter():
         params = {"api_key": TMDB_API_KEY, "query": titre_film.strip(), "language": "fr-FR"}
         try:
             response = requests.get("https://api.themoviedb.org/3/search/multi", params=params, timeout=5).json()
-            results = [r for r in response.get('results', []) if r.get('media_type') in ['movie', 'tv']]
+            # Filtrer pour ne garder que les 'movie' ou 'tv' qui ont une image et une date de sortie
+            results = [r for r in response.get('results', []) 
+                       if r.get('media_type') in ['movie', 'tv'] 
+                       and r.get('poster_path')]
+            
+            # Trier les résultats par popularité pour avoir le plus probable en premier
+            results.sort(key=lambda x: x.get('popularity', 0), reverse=True)
+
             if results:
-                film = results[0]
+                film = results[0] # Le plus populaire sera le 1er
                 media_type = film['media_type']
                 titre = film.get('title') or film.get('name')
+                
+                # ... (le reste de ton code d'insertion reste identique)
                 categorie_auto = recuperer_categorie_film(titre, media_type)
                 
                 conn = get_db_connection()
@@ -415,23 +420,53 @@ def api_discord_suggerer():
     
     return jsonify({"status": "error", "message": "Film introuvable"}), 404
 
-@app.route('/admin/dashboard')
+@app.route('/admin/dashboard', methods=['GET', 'POST'])
 def admin_dashboard():
-    if not is_admin():
-        return "Accès refusé", 403
+    if not is_admin(): return "Accès refusé", 403
+    
+    results = None
+    if request.method == 'POST' and 'search_titre' in request.form:
+        titre = request.form.get('search_titre')
+        # Recherche multi-critères via TMDB
+        params = {"api_key": TMDB_API_KEY, "query": titre, "language": "fr-FR"}
+        resp = requests.get("https://api.themoviedb.org/3/search/multi", params=params).json()
+        # On filtre pour ne garder que les résultats pertinents (films/séries avec affiche)
+        results = [r for r in resp.get('results', []) 
+                   if r.get('media_type') in ['movie', 'tv'] and r.get('poster_path')][:3]
+
     conn = get_db_connection()
     cur = conn.cursor(cursor_factory=DictCursor)
-    cur.execute("SELECT * FROM films WHERE status = 'pending'")
+    cur.execute("SELECT * FROM films WHERE status = 'pending' ORDER BY id DESC")
     films_attente = cur.fetchall()
     cur.close()
     conn.close()
-    return render_template('admin_dashboard.html', films=films_attente)    
-
-
-
     
+    return render_template('admin_dashboard.html', films=films_attente, search_results=results)
 
-
+@app.route('/admin_valider_choix', methods=['POST'])
+def admin_valider_choix():
+    tmdb_id = request.form.get('tmdb_id')
+    media_type = request.form.get('media_type')
+    
+    # Récupérer les détails complets
+    url = f"https://api.themoviedb.org/3/{media_type}/{tmdb_id}?api_key={TMDB_API_KEY}&language=fr-FR"
+    film = requests.get(url).json()
+    titre = film.get('title') or film.get('name')
+    cat = recuperer_categorie_film(titre, media_type)
+    
+    # Insertion en BDD
+    conn = get_db_connection()
+    cur = conn.cursor()
+    cur.execute("""
+        INSERT INTO films (titre, affiche, lien, description, status, categorie, tmdb_id, media_type)
+        VALUES (%s, %s, 'pending', %s, 'pending', %s, %s, %s)
+    """, (titre, f"https://image.tmdb.org/t/p/w500{film['poster_path']}", film.get('overview', ''), cat, tmdb_id, media_type))
+    conn.commit()
+    cur.close()
+    conn.close()
+    
+    flash(f"✅ {titre} ajouté aux suggestions !")
+    return redirect(url_for('admin_dashboard'))
 
 
 if __name__ == '__main__':

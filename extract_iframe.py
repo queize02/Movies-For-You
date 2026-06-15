@@ -1,87 +1,78 @@
 from playwright.sync_api import sync_playwright
 import time
+import os
+import psycopg2
 
-def extraire_iframe(url):
-    print(f"\nChargement de la page : {url} ...")
+# Configuration BDD (à ajuster si besoin)
+DB_URL = 'postgresql://admin:02082008@192.168.1.13:5432/neondb'
+
+def save_iframe_url(film_id, iframe_src):
+    try:
+        conn = psycopg2.connect(DB_URL)
+        cur = conn.cursor()
+        # Mise à jour avec le lien récupéré
+        cur.execute("UPDATE films SET lien = %s, status = 'approved' WHERE id = %s", (iframe_src, film_id))
+        conn.commit()
+        cur.close()
+        conn.close()
+        print(f"✅ Succès : Iframe {iframe_src} enregistrée en BDD pour l'ID {film_id}.")
+    except Exception as e:
+        print(f"❌ Erreur BDD : {e}")
+
+def extraire_et_sauvegarder(url, film_id):
+    extension_path = os.path.abspath("ublock_extension") # Ton dossier d'extension
+
     with sync_playwright() as p:
-        browser = p.chromium.launch(headless=False)
-        context = browser.new_context(
-            user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+        args = [f'--load-extension={extension_path}', f'--disable-extensions-except={extension_path}']
+        
+        browser = p.chromium.launch_persistent_context(
+            user_data_dir="./user_data",
+            headless=False,
+            args=args,
+            viewport={'width': 1280, 'height': 720}
         )
         
-        page = context.new_page()
-        page.on("popup", lambda popup: popup.close())
+        page = browser.pages[0]
+        page.goto(url, wait_until="networkidle")
+
+        # 1. Préparation (Vidzy)
+        page.locator("button.player-option[data-player='ViDZY']").click(force=True)
+        time.sleep(3)
+
+        # 2. Clics (Orange puis Rouge)
+       # 2. Clics (Orange puis Rouge)
+        page.mouse.click(640, 360) # Orange
+        time.sleep(5)
         
+        # --- MODIFICATION ICI ---
+        print("👉 Tentative de clic sur triangle ROUGE (si présent)...")
         try:
-            page.goto(url, timeout=60000)
+            frame = page.frame_locator("iframe#video-iframe")
+            bouton_rouge = frame.locator(".vjs-big-play-button, .play-button").first
             
-            print("\n⏳ Étape 1 : Recherche du bouton publicitaire ('Voir une publicité')...")
-            try:
-                bouton_pub = page.locator("button:has-text('Voir une publicité')")
-                bouton_pub.wait_for(timeout=10000)
-                print("👉 Bouton trouvé ! Clic automatique en cours...")
-                bouton_pub.click(force=True)
-                time.sleep(2)
-            except Exception:
-                print("Pas de bouton 'Voir une publicité' détecté, on continue...")
-
-            print("\n⏳ Étape 2 : Recherche du bouton ('Lecture')...")
-            try:
-                bouton_lecture = page.locator("button:has-text('Lecture')")
-                bouton_lecture.wait_for(timeout=10000)
-                print("👉 Bouton 'Lecture' trouvé ! Clic automatique en cours...")
-                bouton_lecture.click(force=True)
-                time.sleep(2)
-            except Exception:
-                print("Pas de bouton 'Lecture' détecté, on continue...")
-
-            print("\n⏳ Étape 3 : Attente de l'apparition de la vidéo par défaut...")
-            try:
-                page.wait_for_selector("iframe", timeout=20000)
-            except:
-                pass
-            
-            # --- PAUSE INTERACTIVE POUR L'UTILISATEUR ---
-            print("\n" + "="*60)
-            print("⏸️ LE SCRIPT EST EN PAUSE")
-            print("="*60)
-            print("Si la vidéo par défaut (ex: Vidzy) ne marche pas :")
-            print("1. Regardez la fenêtre du navigateur ouverte.")
-            print("2. Changez de source manuellement (ex: LuluStream, VidMoly...).")
-            print("3. Une fois que la vidéo fonctionne à l'écran...")
-            print("="*60)
-            
-            input("\n👉 APPUYEZ SUR [ENTRÉE] ICI POUR EXTRAIRE LE LIEN ACTUEL : ")
-            
-            # On extrait l'iframe qui est PRÉSENTE MAINTENANT sur la page
-            iframe_element = page.query_selector("iframe")
-            
-            if iframe_element:
-                src = iframe_element.get_attribute("src")
-                print("\n" + "="*50)
-                print("✅ Iframe extraite avec succès !")
-                print(f"🔗 Lien : {src}")
-                print("="*50 + "\n")
-                return src
+            # On vérifie la visibilité avant de cliquer
+            if bouton_rouge.is_visible():
+                bouton_rouge.click(force=True)
+                print("✅ Clic sur triangle rouge effectué.")
             else:
-                print("\n❌ Aucune iframe trouvée sur la page actuelle.")
-                return None
-                
-        except Exception as e:
-            print(f"\n❌ Erreur lors de l'extraction : {e}")
-            return None
-        finally:
-            page.wait_for_timeout(2000) 
-            browser.close()
+                print("ℹ️ Le triangle rouge est déjà masqué (le film est peut-être déjà lancé).")
+        except Exception:
+            print("ℹ️ Bouton rouge indisponible, passage à l'extraction.")
+        # ------------------------
+
+        time.sleep(3)
+        # 3. Extraction et Sauvegarde
+        src = page.locator("iframe#video-iframe").get_attribute("src")
+        if src:
+            save_iframe_url(film_id, src)
+        else:
+            print("⚠️ Impossible d'extraire le src.")
+
+        # 4. Fermeture
+        print("👋 Fermeture de la page.")
+        browser.close()
 
 if __name__ == "__main__":
-    print("="*50)
-    print("🤖 EXTRACTEUR D'IFRAME MOVIX")
-    print("="*50)
-    
-    url_utilisateur = input("👉 Collez l'URL du film ici (puis appuyez sur Entrée) : ").strip()
-    
-    if url_utilisateur:
-        lien_iframe = extraire_iframe(url_utilisateur)
-    else:
-        print("❌ Aucune URL n'a été saisie. Fin du script.")
+    url_source = input("URL : ").strip()
+    id_film = input("ID : ").strip()
+    extraire_et_sauvegarder(url_source, id_film)
