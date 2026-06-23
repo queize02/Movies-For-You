@@ -469,6 +469,38 @@ def admin_valider_choix():
     return redirect(url_for('admin_dashboard'))
 
 
+import subprocess
+import threading
+import time
+
+@app.route('/git-webhook', methods=['POST'])
+def git_webhook():
+    # Pour sécuriser, on peut vérifier un token secret passé en paramètre
+    # ex: https://moviesforyou.fr/git-webhook?token=mon_secret_super_sur
+    token = request.args.get('token')
+    if token != "moviesforyousecret":
+        return jsonify({"status": "error", "message": "Token invalide"}), 401
+        
+    try:
+        repo_dir = os.path.dirname(os.path.abspath(__file__))
+        # Exécuter git pull
+        result = subprocess.run(["git", "pull", "origin", "main"], cwd=repo_dir, capture_output=True, text=True)
+        
+        if result.returncode == 0:
+            # Lancer le redémarrage dans un thread séparé pour avoir le temps de renvoyer la réponse HTTP
+            def restart():
+                time.sleep(2)
+                print("WEBHOOK: Arrêt du conteneur pour redémarrage automatique...")
+                os._exit(0)
+            threading.Thread(target=restart).start()
+            return jsonify({"status": "success", "message": "Git pull réussi ! Redémarrage du conteneur en cours..."}), 200
+        else:
+            return jsonify({"status": "error", "message": f"Git pull a échoué : {result.stderr}"}), 500
+    except FileNotFoundError:
+        return jsonify({"status": "error", "message": "La commande 'git' n'est pas installée dans le conteneur Docker."}), 500
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
+
 if __name__ == '__main__':
     with app.app_context():
         init_db()
