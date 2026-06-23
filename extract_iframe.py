@@ -37,12 +37,12 @@ def extraire_et_sauvegarder(url, film_id):
 
         # 1. Préparation (Vidzy)
         page.locator("button.player-option[data-player='ViDZY']").click(force=True)
-        time.sleep(3)
+        time.sleep(2)
 
         # 2. Clics (Orange puis Rouge)
        # 2. Clics (Orange puis Rouge)
         page.mouse.click(640, 360) # Orange
-        time.sleep(5)
+        time.sleep(3)
         
         # --- MODIFICATION ICI ---
         print("👉 Tentative de clic sur triangle ROUGE (si présent)...")
@@ -60,7 +60,7 @@ def extraire_et_sauvegarder(url, film_id):
             print("ℹ️ Bouton rouge indisponible, passage à l'extraction.")
         # ------------------------
 
-        time.sleep(3)
+        time.sleep(2)
         # 3. Extraction et Sauvegarde
         src = page.locator("iframe#video-iframe").get_attribute("src")
         if src:
