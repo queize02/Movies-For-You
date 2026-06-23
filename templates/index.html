@@ -53,9 +53,13 @@
                         <h3 style="color: white; font-size: 1.05rem; margin: 12px 0; min-height: 45px; font-family: sans-serif; text-align: center;">{{ film['titre'] }}</h3>
                         
                         <div class="buttons" style="display: flex; flex-direction: column; gap: 8px;">
+                            {% if film.get('media_type') == 'tv' %}
+                            <a href="{{ url_for('voir_series', series_id=film['id']) }}" class="btn-watch" style="background: #28a745; color: white; padding: 10px; border-radius: 4px; text-decoration: none; font-weight: bold; display: block; text-align: center;">▶ Regarder</a>
+                            {% else %}
                             <a href="{{ url_for('voir_film', movie_id=film['id']) }}" class="btn-watch" style="background: #28a745; color: white; padding: 10px; border-radius: 4px; text-decoration: none; font-weight: bold; display: block; text-align: center;">▶ Regarder</a>
+                            {% endif %}
                             {% if is_admin() %}
-                            <form action="{{ url_for('admin_supprimer', movie_id=film['id']) }}" method="POST" style="margin: 0;">
+                            <form action="{{ url_for('admin_supprimer', media_type=film.get('media_type', 'movie'), media_id=film['id']) }}" method="POST" style="margin: 0;">
                                 <button type="submit" class="btn-delete" style="background: #dc3545; color: white; padding: 10px; border-radius: 4px; border: none; width: 100%; cursor: pointer; font-weight: bold;">🗑️ Supprimer</button>
                             </form>
                             {% endif %}
