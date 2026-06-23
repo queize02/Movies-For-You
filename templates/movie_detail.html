@@ -12,14 +12,16 @@
 <div style="margin: 30px auto; max-width: 800px; background: #000; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.8); padding: 10px;">
 <div class="video-container">
     {% if film.get('lien') and film['lien'] != 'auto' %}
-        <iframe id="video-player"
-            src="{{ film['lien'] }}" 
-            width="100%" 
-            height="500px" 
-            frameborder="0" 
-            allowfullscreen="true" 
-            referrerpolicy="no-referrer"> 
-        </iframe>
+      <iframe id="video-player"
+    src="{{ film['lien'] }}" 
+    width="100%" 
+    height="500px" 
+    frameborder="0" 
+    allowfullscreen="true" 
+    referrerpolicy="no-referrer"
+    sandbox="allow-forms allow-scripts allow-same-origin"
+    allow="autoplay; encrypted-media"> 
+</iframe>
     {% else %}
         <iframe id="video-player"
             src="about:blank" 
@@ -38,6 +40,8 @@
 </div>
 <div id="movie-data" data-tmdb-id="{{ film.tmdb_id }}" data-db-id="{{ film.id }}" style="display:none;"></div>
 <script>
+    const TMDB_API_KEY = "{{ TMDB_API_KEY }}";
+    let db_episodes = {};
     const movieData = document.getElementById('movie-data');
     const tmdb_id = movieData.dataset.tmdbId;
     const db_id = movieData.dataset.dbId;

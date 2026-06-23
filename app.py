@@ -61,7 +61,7 @@ def is_admin():
     return str(session['user']).lower().strip() in [a.lower() for a in ADMINS]
 
 # Rend la fonction accessible dans index.html
-app.jinja_env.globals.update(is_admin=is_admin)
+app.jinja_env.globals.update(is_admin=is_admin, TMDB_API_KEY=TMDB_API_KEY)
 
 # --- CONNEXION NEON (PostgreSQL) ---
 
