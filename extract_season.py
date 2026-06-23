@@ -49,18 +49,18 @@ def extract_episode(page, url):
         print(f"❌ Erreur lors de l'extraction : {e}")
         return None
 
-def save_to_db(film_id, saison, episode, lien):
+def save_to_db(series_id, saison, episode, lien):
     if not lien:
         return
     try:
         conn = psycopg2.connect(DB_URL)
         cur = conn.cursor()
         cur.execute("""
-            INSERT INTO episodes (film_id, saison, episode, lien) 
+            INSERT INTO episodes (series_id, saison, episode, lien) 
             VALUES (%s, %s, %s, %s)
-            ON CONFLICT (film_id, saison, episode) 
+            ON CONFLICT (series_id, saison, episode) 
             DO UPDATE SET lien = EXCLUDED.lien
-        """, (film_id, saison, episode, lien))
+        """, (series_id, saison, episode, lien))
         conn.commit()
         cur.close()
         conn.close()
@@ -80,7 +80,7 @@ if __name__ == "__main__":
         
     saison = int(input("👉 Numéro de la saison à extraire (ex: 1) : ").strip())
     nb_episodes = int(input("👉 Nombre d'épisodes dans cette saison (ex: 8) : ").strip())
-    film_id = int(input("👉 ID de la série sur VOTRE site (le numéro dans l'URL de votre site) : ").strip())
+    series_id = int(input("👉 ID de la série sur VOTRE site (le numéro dans l'URL de votre site) : ").strip())
     
     # Nettoyage de l'URL si elle contient déjà /s/1/e/1
     if "/s/" in base_url:
@@ -100,7 +100,7 @@ if __name__ == "__main__":
             url_episode = f"{base_url}/s/{saison}/e/{ep}"
             print(f"\n--- TRAITEMENT ÉPISODE {ep}/{nb_episodes} ---")
             iframe_src = extract_episode(page, url_episode)
-            save_to_db(film_id, saison, ep, iframe_src)
+            save_to_db(series_id, saison, ep, iframe_src)
             
         browser.close()
         

@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
+    <title>{{ film['titre'] }} - MFY</title>
+</head>
+<body style="background: #141414; color: white; font-family: sans-serif; text-align: center; padding: 40px 20px;">
+    
+    <h1 style="font-size: 2.5rem; margin-bottom: 20px; font-weight: bold; color: white;">{{ film['titre'] }}</h1>
+    
+    <div style="margin: 30px auto; max-width: 800px; background: #000; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.8); padding: 10px;">
+        <div class="video-container">
+            <iframe id="video-player"
+                src="about:blank" 
+                width="100%" 
+                height="500px" 
+                frameborder="0" 
+                allowfullscreen="true" 
+                referrerpolicy="no-referrer"
+                sandbox="allow-forms allow-scripts allow-same-origin"
+                allow="autoplay; encrypted-media"> 
+            </iframe>
+        </div>
+        
+        <div id="tv-controls" style="margin: 20px auto; max-width: 800px; display: flex; gap: 15px; justify-content: center; flex-wrap: wrap;">
+            <select id="season-select" style="padding: 12px; background: #333; color: white; border: 2px solid #e50914; border-radius: 6px; font-size: 1.1rem; cursor: pointer;"></select>
+            <select id="episode-select" style="padding: 12px; background: #333; color: white; border: 2px solid #e50914; border-radius: 6px; font-size: 1.1rem; cursor: pointer;"></select>
+        </div>
+        
+        <div id="movie-data" data-tmdb-id="{{ film.tmdb_id }}" data-db-id="{{ film.id }}" style="display:none;"></div>
+        
+        <script>
+            const TMDB_API_KEY = "{{ TMDB_API_KEY }}";
+            let db_episodes = {};
+            const movieData = document.getElementById('movie-data');
+            const tmdb_id = movieData.dataset.tmdbId;
+            const db_id = movieData.dataset.dbId;
+            const iframe = document.getElementById('video-player');
+            
+            fetch(`/api/episodes/${db_id}`)
+                .then(res => res.json())
+                .then(data => {
+                    db_episodes = data;
+                    // Charger les détails de la série après avoir récupéré les épisodes de la BDD
+                    return fetch(`https://api.themoviedb.org/3/tv/${tmdb_id}?api_key=${TMDB_API_KEY}&language=fr-FR`);
+                })
+                .then(res => res.json())
+                .then(data => {
+                    const seasonSelect = document.getElementById('season-select');
+                    data.seasons.forEach(s => {
+                        if (s.season_number > 0) {
+                            const opt = document.createElement('option');
+                            opt.value = s.season_number;
+                            opt.textContent = `Saison ${s.season_number}`;
+                            seasonSelect.appendChild(opt);
+                        }
+                    });
+                    
+                    seasonSelect.addEventListener('change', (e) => {
+                        loadEpisodes(e.target.value);
+                    });
+                    
+                    if(data.seasons.find(s => s.season_number === 1)) {
+                        seasonSelect.value = 1;
+                        loadEpisodes(1);
+                    } else if (data.seasons.length > 0) {
+                        seasonSelect.value = data.seasons[0].season_number;
+                        loadEpisodes(data.seasons[0].season_number);
+                    }
+                });
+                
+            function loadEpisodes(season_number) {
+                fetch(`https://api.themoviedb.org/3/tv/${tmdb_id}/season/${season_number}?api_key=${TMDB_API_KEY}&language=fr-FR`)
+                    .then(res => res.json())
+                    .then(data => {
+                        const episodeSelect = document.getElementById('episode-select');
+                        episodeSelect.innerHTML = '';
+                        if(data.episodes) {
+                            data.episodes.forEach(e => {
+                                const opt = document.createElement('option');
+                                opt.value = e.episode_number;
+                                opt.textContent = `Épisode ${e.episode_number} : ${e.name}`;
+                                episodeSelect.appendChild(opt);
+                            });
+                            
+                            episodeSelect.addEventListener('change', (e) => {
+                                updatePlayer(season_number, e.target.value);
+                            });
+                            
+                            if(data.episodes.length > 0) {
+                                episodeSelect.value = data.episodes[0].episode_number;
+                                updatePlayer(season_number, data.episodes[0].episode_number);
+                            }
+                        }
+                    });
+            }
+            
+            function updatePlayer(season, episode) {
+                const episodeKey = `${season}-${episode}`;
+                
+                // 1. Vérifier si un lien VF a été extrait manuellement dans la base de données
+                if (db_episodes[episodeKey]) {
+                    iframe.src = db_episodes[episodeKey];
+                } else {
+                    // 2. Si l'épisode n'a pas encore été extrait, on affiche une page vide
+                    iframe.src = "about:blank";
+                }
+            }
+        </script>
+    </div>
+    
+    <details class="movie-description-dropdown" style="max-width: 800px; margin: 20px auto; text-align: left; background: #1f1f1f; padding: 15px; border-radius: 5px; cursor: pointer;" open>
+        <summary style="font-weight: bold; color: #e50914; font-size: 1.2rem;">Description du film</summary>
+        <div class="dropdown-content" style="margin-top: 15px; color: #bbb; line-height: 1.6;">
+            <p>{{ film['description'] if film['description'] else "Aucune description disponible pour cette série." }}</p>
+        </div>
+    </details>
+    
+    <br><br>
+    <a href="{{ url_for('index') }}" style="color: #e50914; text-decoration: none; font-weight: bold; font-size: 1.1rem; border: 1px solid #e50914; padding: 10px 20px; border-radius: 4px; display: inline-block;">← Retour au catalogue</a>
+</body>
+</html>

@@ -69,7 +69,7 @@ app.jinja_env.globals.update(is_admin=is_admin, TMDB_API_KEY=TMDB_API_KEY)
 def init_db():
     conn = get_db_connection()
     cur = conn.cursor()
-    # Table unique avec toutes les colonnes nécessaires
+    # Table pour les films (uniquement)
     cur.execute('''CREATE TABLE IF NOT EXISTS films (
         id SERIAL PRIMARY KEY, 
         titre TEXT, 
@@ -92,28 +92,76 @@ def init_db():
         $$
     ''')
     
+    # Nouvelle table pour les séries
+    cur.execute('''CREATE TABLE IF NOT EXISTS series (
+        id SERIAL PRIMARY KEY, 
+        titre TEXT, 
+        affiche TEXT, 
+        description TEXT,
+        status TEXT DEFAULT 'pending',
+        categorie TEXT,
+        tmdb_id INTEGER)''')
+    
     cur.execute('''CREATE TABLE IF NOT EXISTS users (
         id SERIAL PRIMARY KEY, 
         username TEXT UNIQUE, 
         password TEXT)''')
         
-    cur.execute('''CREATE TABLE IF NOT EXISTS episodes (
-        id SERIAL PRIMARY KEY,
-        film_id INTEGER REFERENCES films(id) ON DELETE CASCADE,
-        saison INTEGER,
-        episode INTEGER,
-        lien TEXT,
-        UNIQUE(film_id, saison, episode))''')
-        
+    # Vérification des colonnes d'episodes pour la migration
+    cur.execute("SELECT column_name FROM information_schema.columns WHERE table_name = 'episodes'")
+    episodes_cols = [r[0] for r in cur.fetchall()]
+    
+    if not episodes_cols:
+        # Si la table n'existe pas encore, on la crée liée aux séries
+        cur.execute('''CREATE TABLE IF NOT EXISTS episodes (
+            id SERIAL PRIMARY KEY,
+            series_id INTEGER REFERENCES series(id) ON DELETE CASCADE,
+            saison INTEGER,
+            episode INTEGER,
+            lien TEXT,
+            UNIQUE(series_id, saison, episode))''')
+    else:
+        # Migration : si 'film_id' existe encore dans 'episodes', on migre vers 'series_id'
+        if 'film_id' in episodes_cols and 'series_id' not in episodes_cols:
+            print("DATABASE MIGRATION: Copie des séries vers la nouvelle table...")
+            
+            # Ajouter la colonne series_id temporairement
+            cur.execute("ALTER TABLE episodes ADD COLUMN IF NOT EXISTS series_id INTEGER REFERENCES series(id) ON DELETE CASCADE")
+            
+            # Récupérer les anciennes séries de la table films
+            cur.execute("SELECT id, titre, affiche, description, status, categorie, tmdb_id FROM films WHERE media_type = 'tv'")
+            old_series = cur.fetchall()
+            
+            for s_id, titre, affiche, desc, status, cat, tmdb_id in old_series:
+                # Insérer la série dans sa table dédiée
+                cur.execute(
+                    "INSERT INTO series (titre, affiche, description, status, categorie, tmdb_id) VALUES (%s, %s, %s, %s, %s, %s) RETURNING id",
+                    (titre, affiche, desc, status, cat, tmdb_id)
+                )
+                new_series_id = cur.fetchone()[0]
+                
+                # Mettre à jour les épisodes associés
+                cur.execute("UPDATE episodes SET series_id = %s WHERE film_id = %s", (new_series_id, s_id))
+                
+            # Supprimer les anciennes séries de la table films
+            cur.execute("DELETE FROM films WHERE media_type = 'tv'")
+            
+            # Supprimer l'ancienne colonne film_id (qui supprime la contrainte UNIQUE associée)
+            cur.execute("ALTER TABLE episodes DROP COLUMN film_id")
+            
+            # Recréer la contrainte UNIQUE sur series_id, saison, episode
+            cur.execute("ALTER TABLE episodes ADD CONSTRAINT episodes_series_id_saison_episode_key UNIQUE(series_id, saison, episode)")
+            print("DATABASE MIGRATION: Migration complétée avec succès !")
+            
     conn.commit()
     cur.close()
     conn.close()
 
-@app.route('/api/episodes/<int:movie_id>')
-def api_episodes(movie_id):
+@app.route('/api/episodes/<int:series_id>')
+def api_episodes(series_id):
     conn = get_db_connection()
     cur = conn.cursor(cursor_factory=DictCursor)
-    cur.execute("SELECT saison, episode, lien FROM episodes WHERE film_id = %s", (movie_id,))
+    cur.execute("SELECT saison, episode, lien FROM episodes WHERE series_id = %s", (series_id,))
     rows = cur.fetchall()
     cur.close()
     conn.close()
@@ -173,17 +221,29 @@ def index():
     if 'user' not in session: return redirect(url_for('login'))
     filter_type = request.args.get('filter')
     conn = get_db_connection()
-    cur = conn.cursor(cursor_factory=DictCursor) # FIX
-    if filter_type in ['movie', 'tv']:
-        cur.execute("SELECT * FROM films WHERE status = 'approved' AND media_type = %s ORDER BY id DESC", (filter_type,))
+    cur = conn.cursor(cursor_factory=DictCursor)
+    
+    tous_les_medias = []
+    if filter_type == 'movie':
+        cur.execute("SELECT *, 'movie' AS media_type FROM films WHERE status = 'approved' ORDER BY id DESC")
+        tous_les_medias = [dict(r) for r in cur.fetchall()]
+    elif filter_type == 'tv':
+        cur.execute("SELECT *, 'tv' AS media_type FROM series WHERE status = 'approved' ORDER BY id DESC")
+        tous_les_medias = [dict(r) for r in cur.fetchall()]
     else:
-        cur.execute("SELECT * FROM films WHERE status = 'approved' ORDER BY id DESC")
-    tous_les_films = cur.fetchall()
+        cur.execute("SELECT *, 'movie' AS media_type FROM films WHERE status = 'approved' ORDER BY id DESC")
+        films = [dict(r) for r in cur.fetchall()]
+        cur.execute("SELECT *, 'tv' AS media_type FROM series WHERE status = 'approved' ORDER BY id DESC")
+        series = [dict(r) for r in cur.fetchall()]
+        tous_les_medias = films + series
+        # Trier pour afficher les plus récents en premier
+        tous_les_medias.sort(key=lambda x: x['id'], reverse=True)
+        
     cur.close()
     conn.close()
     
     films_par_categorie = {}
-    for film in tous_les_films:
+    for film in tous_les_medias:
         cat = film['categorie'] if film['categorie'] else "Autre"
         if cat not in films_par_categorie:
             films_par_categorie[cat] = []
@@ -218,10 +278,16 @@ def admin_ajouter():
                 
                 conn = get_db_connection()
                 cur = conn.cursor(cursor_factory=DictCursor)
-                cur.execute("""
-                    INSERT INTO films (titre, affiche, lien, description, status, categorie, tmdb_id, media_type)
-                    VALUES (%s, %s, %s, %s, 'pending', %s, %s, %s) RETURNING id
-                """, (titre, f"https://image.tmdb.org/t/p/w500{film['poster_path']}", "auto", film.get('overview', ''), categorie_auto, film['id'], media_type))
+                if media_type == 'tv':
+                    cur.execute("""
+                        INSERT INTO series (titre, affiche, description, status, categorie, tmdb_id)
+                        VALUES (%s, %s, %s, 'pending', %s, %s) RETURNING id
+                    """, (titre, f"https://image.tmdb.org/t/p/w500{film['poster_path']}", film.get('overview', ''), categorie_auto, film['id']))
+                else:
+                    cur.execute("""
+                        INSERT INTO films (titre, affiche, lien, description, status, categorie, tmdb_id, media_type)
+                        VALUES (%s, %s, 'auto', %s, 'pending', %s, %s, 'movie') RETURNING id
+                    """, (titre, f"https://image.tmdb.org/t/p/w500{film['poster_path']}", film.get('overview', ''), categorie_auto, film['id']))
                 
                 film_id = cur.fetchone()['id'] # Utilisation du dictionnaire
                 conn.commit()
@@ -271,8 +337,12 @@ def admin_manuel():
 
                 conn = get_db_connection()
                 cur = conn.cursor()
-                cur.execute("INSERT INTO films (titre, affiche, lien, description, status, categorie, tmdb_id, media_type) VALUES (%s, %s, %s, %s, 'approved', %s, %s, %s)", 
-                             (titre_clean, f"https://image.tmdb.org/t/p/w500{film['poster_path']}", lien, film.get('overview', ''), categorie_auto, film['id'], media_type))
+                if media_type == 'tv':
+                    cur.execute("INSERT INTO series (titre, affiche, description, status, categorie, tmdb_id) VALUES (%s, %s, %s, 'approved', %s, %s)", 
+                                 (titre_clean, f"https://image.tmdb.org/t/p/w500{film['poster_path']}", film.get('overview', ''), categorie_auto, film['id']))
+                else:
+                    cur.execute("INSERT INTO films (titre, affiche, lien, description, status, categorie, tmdb_id, media_type) VALUES (%s, %s, %s, %s, 'approved', %s, %s, 'movie')", 
+                                 (titre_clean, f"https://image.tmdb.org/t/p/w500{film['poster_path']}", lien, film.get('overview', ''), categorie_auto, film['id']))
                 conn.commit()
                 cur.close()
                 conn.close()
@@ -299,28 +369,33 @@ def logout():
     return redirect(url_for('login'))
 
 
-@app.route('/admin_approuver/<int:movie_id>', methods=['GET', 'POST'])
-def admin_approuver_request(movie_id):
+@app.route('/admin_approuver/<string:media_type>/<int:media_id>', methods=['GET', 'POST'])
+def admin_approuver_request(media_type, media_id):
     if 'user' not in session or not is_admin():
         return "Accès refusé", 403
 
     conn = get_db_connection()
     cur = conn.cursor(cursor_factory=DictCursor)
 
-    # 1. On récupère le film pour avoir son tmdb_id
-    cur.execute("SELECT * FROM films WHERE id = %s", (movie_id,))
+    table = 'series' if media_type == 'tv' else 'films'
+    cur.execute(f"SELECT * FROM {table} WHERE id = %s", (media_id,))
     film = cur.fetchone()
 
     if request.method == 'POST':
         lien_final = request.form.get('lien_final')
         
         if film:
-            media_type = film.get('media_type', 'movie')
             categorie_auto = recuperer_categorie_film(film['titre'], media_type)
-            cur.execute(
-                "UPDATE films SET status = 'approved', lien = %s, categorie = %s WHERE id = %s",
-                (lien_final, categorie_auto, movie_id)
-            )
+            if media_type == 'tv':
+                cur.execute(
+                    "UPDATE series SET status = 'approved', categorie = %s WHERE id = %s",
+                    (categorie_auto, media_id)
+                )
+            else:
+                cur.execute(
+                    "UPDATE films SET status = 'approved', lien = %s, categorie = %s WHERE id = %s",
+                    (lien_final, categorie_auto, media_id)
+                )
             conn.commit()
 
             # Notification Bot
@@ -337,21 +412,22 @@ def admin_approuver_request(movie_id):
         conn.close()
         return redirect(url_for('index'))
 
-    return render_template('approve_form.html', movie_id=movie_id, tmdb_id=film['tmdb_id'], media_type=film.get('media_type', 'movie'))
+    return render_template('approve_form.html', movie_id=media_id, tmdb_id=film['tmdb_id'], media_type=media_type)
  
-@app.route('/admin_supprimer/<int:movie_id>', methods=['POST'])
-def admin_supprimer(movie_id):
+@app.route('/admin_supprimer/<string:media_type>/<int:media_id>', methods=['POST'])
+def admin_supprimer(media_type, media_id):
     if 'user' not in session or not is_admin():
         flash("🔴 Accès refusé.")
         return redirect(url_for('index'))
     try:
         conn = get_db_connection()
         cur = conn.cursor()
-        cur.execute("DELETE FROM films WHERE id = %s", (movie_id,))
+        table = 'series' if media_type == 'tv' else 'films'
+        cur.execute(f"DELETE FROM {table} WHERE id = %s", (media_id,))
         conn.commit()
         cur.close()
         conn.close()
-        flash("🗑️ Le film a été supprimé.")
+        flash("🗑️ Le média a été supprimé.")
     except Exception as e:
         flash(f"Erreur : {e}")
     return redirect(url_for('index'))
@@ -362,22 +438,36 @@ def voir_film(movie_id):
         return redirect(url_for('login'))
         
     conn = get_db_connection()
-    
-    # ✅ On utilise directement DictCursor puisqu'il est déjà importé en haut du fichier !
     cur = conn.cursor(cursor_factory=DictCursor)
-    
-    cur.execute("SELECT * FROM films WHERE id = %s", (movie_id,))
+    cur.execute("SELECT *, 'movie' AS media_type FROM films WHERE id = %s", (movie_id,))
     film = cur.fetchone()
-    
     cur.close()
     conn.close()
     
     if film:
-        return render_template('movie_detail.html', film=film)
+        return render_template('movie_detail.html', film=dict(film))
     else:
         flash("Film introuvable.")
         return redirect(url_for('index'))
-# Ajoute ceci dans app.py
+
+@app.route('/series/<int:series_id>')
+def voir_series(series_id):
+    if 'user' not in session: 
+        return redirect(url_for('login'))
+        
+    conn = get_db_connection()
+    cur = conn.cursor(cursor_factory=DictCursor)
+    cur.execute("SELECT *, 'tv' AS media_type FROM series WHERE id = %s", (series_id,))
+    series = cur.fetchone()
+    cur.close()
+    conn.close()
+    
+    if series:
+        return render_template('series_detail.html', film=dict(series))
+    else:
+        flash("Série introuvable.")
+        return redirect(url_for('index'))
+
 @app.route('/api/discord_suggerer', methods=['POST'])
 def api_discord_suggerer():
     data = request.json
@@ -398,10 +488,16 @@ def api_discord_suggerer():
         # Insertion dans Neon
         conn = get_db_connection()
         cur = conn.cursor()
-        cur.execute("""
-            INSERT INTO films (titre, affiche, lien, description, status, categorie, tmdb_id, media_type)
-            VALUES (%s, %s, %s, %s, 'pending', %s, %s, %s) RETURNING id
-        """, (titre, f"https://image.tmdb.org/t/p/w500{film['poster_path']}", "auto", film.get('overview', ''), categorie_auto, film['id'], media_type))
+        if media_type == 'tv':
+            cur.execute("""
+                INSERT INTO series (titre, affiche, description, status, categorie, tmdb_id)
+                VALUES (%s, %s, %s, 'pending', %s, %s) RETURNING id
+            """, (titre, f"https://image.tmdb.org/t/p/w500{film['poster_path']}", film.get('overview', ''), categorie_auto, film['id']))
+        else:
+            cur.execute("""
+                INSERT INTO films (titre, affiche, lien, description, status, categorie, tmdb_id, media_type)
+                VALUES (%s, %s, 'auto', %s, 'pending', %s, %s, 'movie') RETURNING id
+            """, (titre, f"https://image.tmdb.org/t/p/w500{film['poster_path']}", "auto", film.get('overview', ''), categorie_auto, film['id']))
         film_id = cur.fetchone()[0]
         conn.commit()
         cur.close()
@@ -436,8 +532,12 @@ def admin_dashboard():
 
     conn = get_db_connection()
     cur = conn.cursor(cursor_factory=DictCursor)
-    cur.execute("SELECT * FROM films WHERE status = 'pending' ORDER BY id DESC")
-    films_attente = cur.fetchall()
+    cur.execute("SELECT *, 'movie' AS media_type FROM films WHERE status = 'pending' ORDER BY id DESC")
+    pending_films = [dict(r) for r in cur.fetchall()]
+    cur.execute("SELECT *, 'tv' AS media_type FROM series WHERE status = 'pending' ORDER BY id DESC")
+    pending_series = [dict(r) for r in cur.fetchall()]
+    films_attente = pending_films + pending_series
+    films_attente.sort(key=lambda x: x['id'], reverse=True)
     cur.close()
     conn.close()
     
@@ -457,10 +557,16 @@ def admin_valider_choix():
     # Insertion en BDD
     conn = get_db_connection()
     cur = conn.cursor()
-    cur.execute("""
-        INSERT INTO films (titre, affiche, lien, description, status, categorie, tmdb_id, media_type)
-        VALUES (%s, %s, 'pending', %s, 'pending', %s, %s, %s)
-    """, (titre, f"https://image.tmdb.org/t/p/w500{film['poster_path']}", film.get('overview', ''), cat, tmdb_id, media_type))
+    if media_type == 'tv':
+        cur.execute("""
+            INSERT INTO series (titre, affiche, description, status, categorie, tmdb_id)
+            VALUES (%s, %s, %s, 'pending', %s, %s)
+        """, (titre, f"https://image.tmdb.org/t/p/w500{film['poster_path']}", film.get('overview', ''), cat, tmdb_id))
+    else:
+        cur.execute("""
+            INSERT INTO films (titre, affiche, lien, description, status, categorie, tmdb_id, media_type)
+            VALUES (%s, %s, 'pending', %s, 'pending', %s, %s, 'movie')
+        """, (titre, f"https://image.tmdb.org/t/p/w500{film['poster_path']}", film.get('overview', ''), cat, tmdb_id))
     conn.commit()
     cur.close()
     conn.close()

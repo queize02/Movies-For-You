@@ -7,17 +7,17 @@ import os
 # Configuration BDD
 DB_URL = 'postgresql://admin:02082008@192.168.1.13:5432/neondb'
 
-def save_to_db(film_id, saison, episode, lien):
+def save_to_db(series_id, saison, episode, lien):
     if not lien: return
     try:
         conn = psycopg2.connect(DB_URL)
         cur = conn.cursor()
         cur.execute("""
-            INSERT INTO episodes (film_id, saison, episode, lien) 
+            INSERT INTO episodes (series_id, saison, episode, lien) 
             VALUES (%s, %s, %s, %s)
-            ON CONFLICT (film_id, saison, episode) 
+            ON CONFLICT (series_id, saison, episode) 
             DO UPDATE SET lien = EXCLUDED.lien
-        """, (film_id, saison, episode, lien))
+        """, (series_id, saison, episode, lien))
         conn.commit()
         cur.close()
         conn.close()
@@ -208,7 +208,7 @@ if __name__ == "__main__":
     
     saison   = int(input("👉 Numéro de saison : ").strip())
     nb_eps   = int(input("👉 Nombre d'épisodes à extraire : ").strip())
-    film_id  = int(input("👉 ID de la série en base de données : ").strip())
+    series_id  = int(input("👉 ID de la série en base de données : ").strip())
     
     # Vérifier si l'extension uBlock existe
     extension_path = os.path.abspath("ublock_extension")
@@ -262,7 +262,7 @@ if __name__ == "__main__":
         
         for ep in range(1, nb_eps + 1):
             iframe_src = extract_episode(page, ctx, ep)
-            save_to_db(film_id, saison, ep, iframe_src)
+            save_to_db(series_id, saison, ep, iframe_src)
             time.sleep(2)
         
         browser.close()
