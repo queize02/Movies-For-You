@@ -4,6 +4,36 @@ import psycopg2
 from psycopg2.extras import DictCursor
 import hashlib
 import os
+
+# --- NOUVELLE FONCTION POUR LES NOTIFICATIONS ---
+def envoyer_notification_discord(titre, media_type, user, affiche, film_id=None):
+    data = {
+        "titre": titre,
+        "media_type": media_type, # 'movie' ou 'tv'
+        "user": user,
+        "affiche": affiche,
+        "film_id": film_id
+    }
+    try:
+        # Remplacez l'URL Render par le nom du service défini dans docker-compose
+        requests.post("http://bot_discord:10000/nouvelle-suggestion", json=data, timeout=10)
+    except Exception as e:
+        print(f"DEBUG: Erreur notification locale : {e}")
+        
+def envoyer_notif_discord(titre, type_media):
+    # type_media est 'movie' ou 'tv'
+    prefixe = "📢 Nouveau film ajouté !" if type_media == 'movie' else "📢 Nouvelle série ajoutée !"
+    
+    data = {
+        "embeds": [{
+            "title": prefixe,
+            "description": f"**Titre :** {titre}",
+            "color": 16744448 if type_media == 'movie' else 3066993
+        }]
+    }
+    # Remplace par ton URL Webhook réelle ici
+    requests.post("TON_WEBHOOK_DISCORD_URL", json=data)
+
 DATABASE_URL = "postgresql://admin:02082008@192.168.1.13:5432/neondb"
 def get_db_connection():
     # On cherche la variable, si elle n'existe pas, on prend DATABASE_URL définie en haut
@@ -260,20 +290,16 @@ def admin_ajouter():
         params = {"api_key": TMDB_API_KEY, "query": titre_film.strip(), "language": "fr-FR"}
         try:
             response = requests.get("https://api.themoviedb.org/3/search/multi", params=params, timeout=5).json()
-            # Filtrer pour ne garder que les 'movie' ou 'tv' qui ont une image et une date de sortie
             results = [r for r in response.get('results', []) 
                        if r.get('media_type') in ['movie', 'tv'] 
                        and r.get('poster_path')]
-            
-            # Trier les résultats par popularité pour avoir le plus probable en premier
             results.sort(key=lambda x: x.get('popularity', 0), reverse=True)
 
             if results:
-                film = results[0] # Le plus populaire sera le 1er
+                film = results[0]
                 media_type = film['media_type']
                 titre = film.get('title') or film.get('name')
                 
-                # ... (le reste de ton code d'insertion reste identique)
                 categorie_auto = recuperer_categorie_film(titre, media_type)
                 
                 conn = get_db_connection()
@@ -289,18 +315,13 @@ def admin_ajouter():
                         VALUES (%s, %s, 'auto', %s, 'pending', %s, %s, 'movie') RETURNING id
                     """, (titre, f"https://image.tmdb.org/t/p/w500{film['poster_path']}", film.get('overview', ''), categorie_auto, film['id']))
                 
-                film_id = cur.fetchone()['id'] # Utilisation du dictionnaire
+                film_id = cur.fetchone()['id']
                 conn.commit()
                 cur.close()
                 conn.close()
 
-                # Appel au Bot
-                titre_discord = titre if media_type == 'movie' else f"(SÉRIE) {titre}"
-                requests.post("https://bot-js-l8hi.onrender.com/nouvelle-suggestion", json={
-                    "titre": titre_discord,
-                    "user": session['user'],
-                    "affiche": f"https://image.tmdb.org/t/p/w500{film['poster_path']}"
-                }, timeout=10)
+                # Appel à la nouvelle fonction générique
+                envoyer_notification_discord(titre, media_type, session['user'], f"https://image.tmdb.org/t/p/w500{film['poster_path']}", film_id)
                 
                 flash("Merci ! Ta suggestion a été envoyée.")
                 return render_template('admin.html')
@@ -319,10 +340,9 @@ def admin_manuel():
         return redirect(url_for('index'))
     
     if request.method == 'POST':
-        titre = request.form.get('titre') # Variable définie ici
+        titre = request.form.get('titre')
         lien = request.form.get('lien')
         
-        # Corrige ici : utilise 'titre' au lieu de 'titre_film'
         titre_propre = titre.replace(" :", ":").strip()
         params = {"api_key": TMDB_API_KEY, "query": titre_propre, "language": "fr-FR"}
         
@@ -333,7 +353,7 @@ def admin_manuel():
                 film = results[0]
                 media_type = film['media_type']
                 titre_clean = film.get('title') or film.get('name')
-                categorie_auto = recuperer_categorie_film(titre_clean, media_type) # <--- OBLIGATOIRE
+                categorie_auto = recuperer_categorie_film(titre_clean, media_type)
 
                 conn = get_db_connection()
                 cur = conn.cursor()
@@ -398,7 +418,6 @@ def admin_approuver_request(media_type, media_id):
                 )
             conn.commit()
 
-            # Notification Bot
             print("DEBUG: Tentative d'envoi de la notification au bot...")
             try:
                 reponse = requests.post("https://bot-js-l8hi.onrender.com/admin_manuel", json={
@@ -474,7 +493,6 @@ def api_discord_suggerer():
     titre_film = data.get('titre')
     user = data.get('user')
     
-    # Recherche TMDB (copie de la logique de admin_ajouter)
     params = {"api_key": TMDB_API_KEY, "query": titre_film, "language": "fr-FR"}
     response = requests.get("https://api.themoviedb.org/3/search/multi", params=params).json()
     results = [r for r in response.get('results', []) if r.get('media_type') in ['movie', 'tv']]
@@ -485,7 +503,6 @@ def api_discord_suggerer():
         titre = film.get('title') or film.get('name')
         categorie_auto = recuperer_categorie_film(titre, media_type)
         
-        # Insertion dans Neon
         conn = get_db_connection()
         cur = conn.cursor()
         if media_type == 'tv':
@@ -503,14 +520,8 @@ def api_discord_suggerer():
         cur.close()
         conn.close()
         
-        # Envoi de la notification au bot (via ta route existante)
-        titre_discord = titre if media_type == 'movie' else f"(SÉRIE) {titre}"
-        requests.post("https://bot-js-l8hi.onrender.com/nouvelle-suggestion", json={
-            "titre": titre_discord,
-            "user": user,
-            "affiche": f"https://image.tmdb.org/t/p/w500{film['poster_path']}",
-            "film_id": film_id
-        })
+        # Appel à la nouvelle fonction générique
+        envoyer_notification_discord(titre, media_type, user, f"https://image.tmdb.org/t/p/w500{film['poster_path']}", film_id)
         
         return jsonify({"status": "success", "message": "Suggestion ajoutée"}), 200
     
@@ -523,10 +534,8 @@ def admin_dashboard():
     results = None
     if request.method == 'POST' and 'search_titre' in request.form:
         titre = request.form.get('search_titre')
-        # Recherche multi-critères via TMDB
         params = {"api_key": TMDB_API_KEY, "query": titre, "language": "fr-FR"}
         resp = requests.get("https://api.themoviedb.org/3/search/multi", params=params).json()
-        # On filtre pour ne garder que les résultats pertinents (films/séries avec affiche)
         results = [r for r in resp.get('results', []) 
                    if r.get('media_type') in ['movie', 'tv'] and r.get('poster_path')][:3]
 
@@ -548,13 +557,11 @@ def admin_valider_choix():
     tmdb_id = request.form.get('tmdb_id')
     media_type = request.form.get('media_type')
     
-    # Récupérer les détails complets
     url = f"https://api.themoviedb.org/3/{media_type}/{tmdb_id}?api_key={TMDB_API_KEY}&language=fr-FR"
     film = requests.get(url).json()
     titre = film.get('title') or film.get('name')
     cat = recuperer_categorie_film(titre, media_type)
     
-    # Insertion en BDD
     conn = get_db_connection()
     cur = conn.cursor()
     if media_type == 'tv':
@@ -581,19 +588,15 @@ import time
 
 @app.route('/git-webhook', methods=['POST'])
 def git_webhook():
-    # Pour sécuriser, on peut vérifier un token secret passé en paramètre
-    # ex: https://moviesforyou.fr/git-webhook?token=mon_secret_super_sur
     token = request.args.get('token')
     if token != "moviesforyousecret":
         return jsonify({"status": "error", "message": "Token invalide"}), 401
         
     try:
         repo_dir = os.path.dirname(os.path.abspath(__file__))
-        # Exécuter git pull
         result = subprocess.run(["git", "pull", "origin", "main"], cwd=repo_dir, capture_output=True, text=True)
         
         if result.returncode == 0:
-            # Lancer le redémarrage dans un thread séparé pour avoir le temps de renvoyer la réponse HTTP
             def restart():
                 time.sleep(2)
                 print("WEBHOOK: Arrêt du conteneur pour redémarrage automatique...")
@@ -610,4 +613,4 @@ def git_webhook():
 if __name__ == '__main__':
     with app.app_context():
         init_db()
-app.run(host='0.0.0.0', port=5000, debug=True)
+    app.run(host='0.0.0.0', port=5000, debug=True)
