@@ -51,10 +51,18 @@
         <h1>Proposer un nouveau film ou Série</h1>
         <p>Entrez le titre exact, Movies For You s'occupe de trouver l'affiche !</p>
         
-        <form class="admin-form" method="POST">
-            <input type="text" name="titre" placeholder="Titre du film (ex: Avatar)" required>
-            <button type="submit" class="btn-submit">PROPOSER LE FILM OU LA SÉRIE </button>
-        </form>
+ <form class="admin-form" method="POST">
+    <input type="text" name="titre" placeholder="Titre du film ou série..." required>
+    
+    <select name="type">
+        <option value="movie">Film</option>
+        <option value="tv">Série</option>
+    </select>
+    
+    <input type="text" name="affiche" placeholder="URL de l'affiche (facultatif)">
+    
+    <button type="submit">Ajouter</button>
+</form>
         
         <a href="/" class="back-link">← Retour au catalogue</a>
     </div>

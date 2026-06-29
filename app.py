@@ -15,24 +15,11 @@ def envoyer_notification_discord(titre, media_type, user, affiche, film_id=None)
         "film_id": film_id
     }
     try:
-        # Remplacez l'URL Render par le nom du service défini dans docker-compose
+        print(f"DEBUG: Envoi notif pour {titre} de type {media_type}")
         requests.post("http://bot_discord:10000/nouvelle-suggestion", json=data, timeout=10)
     except Exception as e:
         print(f"DEBUG: Erreur notification locale : {e}")
-        
-def envoyer_notif_discord(titre, type_media):
-    # type_media est 'movie' ou 'tv'
-    prefixe = "📢 Nouveau film ajouté !" if type_media == 'movie' else "📢 Nouvelle série ajoutée !"
-    
-    data = {
-        "embeds": [{
-            "title": prefixe,
-            "description": f"**Titre :** {titre}",
-            "color": 16744448 if type_media == 'movie' else 3066993
-        }]
-    }
-    # Remplace par ton URL Webhook réelle ici
-    requests.post("TON_WEBHOOK_DISCORD_URL", json=data)
+
 
 DATABASE_URL = "postgresql://admin:02082008@192.168.1.13:5432/neondb"
 def get_db_connection():
@@ -283,52 +270,41 @@ def index():
 
 @app.route('/admin_ajouter', methods=['GET', 'POST'])
 def admin_ajouter():
-    if 'user' not in session: return redirect(url_for('login'))
-    
-    if request.method == 'POST':
-        titre_film = request.form.get('titre')
-        params = {"api_key": TMDB_API_KEY, "query": titre_film.strip(), "language": "fr-FR"}
-        try:
-            response = requests.get("https://api.themoviedb.org/3/search/multi", params=params, timeout=5).json()
-            results = [r for r in response.get('results', []) 
-                       if r.get('media_type') in ['movie', 'tv'] 
-                       and r.get('poster_path')]
-            results.sort(key=lambda x: x.get('popularity', 0), reverse=True)
+    # 1. Gestion de l'affichage du formulaire (GET)
+    if request.method == 'GET':
+        return render_template('admin.html')
 
-            if results:
-                film = results[0]
-                media_type = film['media_type']
-                titre = film.get('title') or film.get('name')
-                
-                categorie_auto = recuperer_categorie_film(titre, media_type)
-                
-                conn = get_db_connection()
-                cur = conn.cursor(cursor_factory=DictCursor)
-                if media_type == 'tv':
-                    cur.execute("""
-                        INSERT INTO series (titre, affiche, description, status, categorie, tmdb_id)
-                        VALUES (%s, %s, %s, 'pending', %s, %s) RETURNING id
-                    """, (titre, f"https://image.tmdb.org/t/p/w500{film['poster_path']}", film.get('overview', ''), categorie_auto, film['id']))
-                else:
-                    cur.execute("""
-                        INSERT INTO films (titre, affiche, lien, description, status, categorie, tmdb_id, media_type)
-                        VALUES (%s, %s, 'auto', %s, 'pending', %s, %s, 'movie') RETURNING id
-                    """, (titre, f"https://image.tmdb.org/t/p/w500{film['poster_path']}", film.get('overview', ''), categorie_auto, film['id']))
-                
-                film_id = cur.fetchone()['id']
-                conn.commit()
-                cur.close()
-                conn.close()
+    # 2. Traitement de l'envoi du formulaire (POST)
+    try:
+        # Récupération des données du formulaire
+        titre = request.form.get('titre')
+        # Si 'type' et 'affiche' sont absents du HTML, on leur donne une valeur par défaut
+        media_type = request.form.get('type', 'movie') 
+        affiche_url = request.form.get('affiche', '') 
+        user = session.get('username', 'Utilisateur')
 
-                # Appel à la nouvelle fonction générique
-                envoyer_notification_discord(titre, media_type, session['user'], f"https://image.tmdb.org/t/p/w500{film['poster_path']}", film_id)
-                
-                flash("Merci ! Ta suggestion a été envoyée.")
-                return render_template('admin.html')
-        except Exception as e:
-            print(f"DEBUG: Erreur ajout : {e}")
-            flash("Une erreur est survenue.")
-    return render_template('admin.html')
+        # Insertion en base de données
+        conn = get_db_connection()
+        cur = conn.cursor()
+        cur.execute(
+            "INSERT INTO suggestions (titre, type, affiche, utilisateur) VALUES (%s, %s, %s, %s)",
+            (titre, media_type, affiche_url, user)
+        )
+        conn.commit()
+        cur.close()
+        conn.close()
+
+        # Envoi de la notification Discord
+        # On utilise le nom de service 'bot_discord' défini dans ton docker-compose
+        envoyer_notification_discord(titre, media_type, user, affiche_url)
+
+        flash(f"✅ Merci ! La suggestion pour {titre} a été ajoutée.")
+        return redirect(url_for('admin_ajouter'))
+
+    except Exception as e:
+        print(f"DEBUG: Erreur dans admin_ajouter : {e}")
+        flash("❌ Une erreur est survenue lors de l'ajout.")
+        return redirect(url_for('admin_ajouter'))
 
 @app.route('/admin_manuel', methods=['GET', 'POST'])
 def admin_manuel():
