@@ -58,3 +58,81 @@ button {
     cursor: pointer;
     margin-top: 10px;
 }
+
+.request-box {
+    width: min(100%, 480px);
+    padding: 40px;
+    background: #1f1f1f;
+    border-radius: 12px;
+    border: 1px solid #333;
+    box-sizing: border-box;
+}
+
+.request-box h2 {
+    margin-top: 0;
+    margin-bottom: 24px;
+    text-align: center;
+    color: #e50914;
+}
+
+.request-form {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+}
+
+.request-field {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.request-field label {
+    color: #fff;
+    font-weight: 600;
+}
+
+.request-field input,
+.request-field textarea {
+    width: 100%;
+    padding: 12px;
+    border-radius: 6px;
+    border: 1px solid #444;
+    background: #111;
+    color: white;
+    box-sizing: border-box;
+    font-family: inherit;
+}
+
+.request-field textarea {
+    min-height: 120px;
+    resize: vertical;
+}
+
+.request-submit {
+    padding: 14px;
+    border-radius: 6px;
+}
+
+.request-footer {
+    text-align: center;
+    margin-top: 16px;
+}
+
+.request-footer a {
+    color: #888;
+    text-decoration: none;
+    font-size: 0.95rem;
+}
+
+@media (max-width: 768px) {
+    .request-box {
+        width: 100%;
+        padding: 28px;
+        margin: 0 auto;
+    }
+
+    button {
+        height: 48px;
+    }
+}

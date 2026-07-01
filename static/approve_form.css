@@ -65,3 +65,92 @@ button:hover {
 button:active {
     transform: scale(0.98);
 }
+
+.approve-page {
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
+    background: #141414;
+}
+
+.approve-card {
+    width: min(100%, 420px);
+    background: #1f1f1f;
+    padding: 30px;
+    border-radius: 12px;
+    border: 1px solid #333;
+    box-sizing: border-box;
+}
+
+.approve-card h1 {
+    margin-bottom: 20px;
+    font-size: 1.8rem;
+    color: #fff;
+    text-align: center;
+}
+
+.approve-form {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+}
+
+.approve-form label {
+    color: #fff;
+    font-weight: 600;
+}
+
+.approve-form input {
+    width: 100%;
+    padding: 12px;
+    border-radius: 6px;
+    border: 1px solid #444;
+    background: #111;
+    color: white;
+    box-sizing: border-box;
+}
+
+.approve-info {
+    margin: 0;
+    font-size: 0.95rem;
+    line-height: 1.4;
+}
+
+.approve-tv {
+    color: #46d369;
+}
+
+.approve-movie {
+    color: #e50914;
+}
+
+.approve-submit {
+    background: #e50914;
+    color: white;
+    border: none;
+    padding: 14px;
+    border-radius: 6px;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+@media (max-width: 768px) {
+    .approve-page {
+        padding: 16px;
+    }
+
+    .approve-card {
+        padding: 24px;
+    }
+
+    .approve-card h1 {
+        font-size: 1.6rem;
+    }
+
+    .approve-form input,
+    .approve-submit {
+        font-size: 0.95rem;
+    }
+}

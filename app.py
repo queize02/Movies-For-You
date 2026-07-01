@@ -502,6 +502,21 @@ def api_discord_suggerer():
     
     return jsonify({"status": "error", "message": "Film introuvable"}), 404
 
+@app.route('/api/medias')
+def api_medias():
+    conn = get_db_connection()
+    cur = conn.cursor(cursor_factory=DictCursor)
+    cur.execute("SELECT *, 'movie' AS media_type FROM films WHERE status = 'approved' ORDER BY id DESC")
+    films = [dict(r) for r in cur.fetchall()]
+    cur.execute("SELECT *, 'tv' AS media_type FROM series WHERE status = 'approved' ORDER BY id DESC")
+    series = [dict(r) for r in cur.fetchall()]
+    cur.close()
+    conn.close()
+
+    medias = films + series
+    medias.sort(key=lambda x: x['id'], reverse=True)
+    return jsonify(medias), 200
+
 @app.route('/admin/dashboard', methods=['GET', 'POST'])
 def admin_dashboard():
     if not is_admin(): return "Accès refusé", 403

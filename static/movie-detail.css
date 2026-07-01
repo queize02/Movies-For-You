@@ -1,57 +1,149 @@
-/* --- STYLE DU DROPDOWN DESCRIPTION --- */
+html, body {
+    margin: 0;
+    padding: 0;
+    min-height: 100%;
+    background: #141414;
+    color: white;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+body {
+    padding: 20px;
+}
+
+.page-wrapper {
+    max-width: 900px;
+    margin: 0 auto;
+    background: #000;
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 4px 25px rgba(0,0,0,0.7);
+}
+
+h1 {
+    margin: 0 0 20px 0;
+    font-size: clamp(2rem, 4vw, 2.8rem);
+    text-align: center;
+    line-height: 1.1;
+    padding: 0 10px;
+}
+
+.video-container {
+    position: relative;
+    width: 100%;
+    padding-top: 56.25%;
+    background: #000;
+}
+
+.video-container iframe {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    border: 0;
+}
+
 .movie-description-dropdown {
-    background: #1a1a1a;
+    background: #1f1f1f;
     border: 1px solid #333;
-    border-radius: 4px;
-    margin: 10px 15px; /* Aligné avec tes boutons */
+    border-radius: 8px;
+    margin: 20px auto 0 auto;
+    max-width: 900px;
     text-align: left;
     overflow: hidden;
     transition: border-color 0.3s;
 }
 
 .movie-description-dropdown[open] {
-    border-color: #e50914; /* Devient rouge quand il est déplié */
+    border-color: #e50914;
 }
 
 .movie-description-dropdown summary {
-    padding: 10px 15px;
-    font-size: 0.85rem;
+    padding: 14px 16px;
+    font-size: 1.05rem;
     font-weight: bold;
-    color: #e50914; /* Texte rouge */
+    color: #e50914;
     cursor: pointer;
-    list-style: none; /* Enlève la flèche par défaut */
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    user-select: none;
+    list-style: none;
 }
 
-/* Ajout d'une petite flèche personnalisée à droite */
+.movie-description-dropdown summary::-webkit-details-marker {
+    display: none;
+}
+
 .movie-description-dropdown summary::after {
     content: '▼';
-    font-size: 0.7rem;
+    float: right;
+    font-size: 0.9rem;
     color: #aaa;
     transition: transform 0.2s;
 }
 
-/* Rotation de la flèche quand c'est ouvert */
 .movie-description-dropdown[open] summary::after {
     transform: rotate(180deg);
     color: #e50914;
 }
 
-/* Zone du texte caché */
 .dropdown-content {
-    padding: 10px 15px;
+    padding: 14px 16px;
     background: #111;
     border-top: 1px solid #222;
-    max-height: 120px;
-    overflow-y: auto; /* Scroll si la description est géante */
 }
 
 .dropdown-content p {
-    color: #cccccc;
-    font-size: 0.85rem;
-    line-height: 1.4;
+    color: #ccc;
+    font-size: 0.95rem;
+    line-height: 1.7;
     margin: 0;
+}
+
+.back-button {
+    display: inline-block;
+    margin: 24px auto 0 auto;
+    padding: 12px 18px;
+    color: #e50914;
+    text-decoration: none;
+    font-weight: 600;
+    border: 1px solid #e50914;
+    border-radius: 8px;
+}
+
+@media (max-width: 768px) {
+    body {
+        padding: 16px;
+    }
+    .page-wrapper {
+        border-radius: 8px;
+    }
+    .video-container {
+        padding-top: 62.5%;
+    }
+    .movie-description-dropdown {
+        margin: 18px auto 0 auto;
+    }
+    .movie-description-dropdown summary {
+        font-size: 1rem;
+    }
+    .dropdown-content {
+        padding: 12px 14px;
+    }
+    .back-button {
+        width: 100%;
+        text-align: center;
+    }
+}
+
+@media (max-width: 480px) {
+    .page-wrapper {
+        width: 100%;
+    }
+    h1 {
+        font-size: 1.9rem;
+    }
+    .movie-description-dropdown summary {
+        font-size: 0.98rem;
+    }
+    .back-button {
+        padding: 11px 14px;
+    }
 }

@@ -1,24 +1,27 @@
 <!DOCTYPE html>
 <html lang="fr">
-<body style="background: #141414; color: white; font-family: sans-serif; padding: 20px;">
-    <h1>Approuver le film</h1>
-<form action="{{ url_for('admin_supprimer', media_type=film.get('media_type', 'movie'), media_id=film['id']) }}" method="POST" ...>
-    <label>Lien Embed (VF) :</label><br>
-    
-    {% if media_type == 'tv' %}
-        <p style="color: #46d369; font-size: 0.9em;">🟢 Il s'agit d'une série. Laissez ce champ vide (les épisodes seront générés automatiquement).</p>
-        <input type="text" name="lien_final" 
-               value="" 
-               style="width: 100%; padding: 10px; background: #333; color: white; border: 1px solid #46d369;">
-    {% else %}
-        <p style="color: #e50914; font-size: 0.9em;">🔴 Il s'agit d'un film. Le lien de votre extracteur est obligatoire.</p>
-        <input type="text" name="lien_final" 
-               value="" 
-               style="width: 100%; padding: 10px; background: #fff; color: black; border: 1px solid #e50914;" required>
-    {% endif %}
-           
-    <br><br>
-    <button type="submit" style="padding: 10px 20px; background: #e50914; color: white; border: none; font-weight: bold; cursor: pointer;">Valider et Publier</button>
-</form>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Approuver le film</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='approve_form.css') }}">
+</head>
+<body>
+    <div class="approve-page">
+        <div class="approve-card">
+            <h1>Approuver le film</h1>
+            <form action="{{ url_for('admin_supprimer', media_type=film.get('media_type', 'movie'), media_id=film['id']) }}" method="POST" class="approve-form">
+                <label>Lien Embed (VF) :</label>
+                {% if media_type == 'tv' %}
+                    <p class="approve-info approve-tv">🟢 Il s'agit d'une série. Laissez ce champ vide (les épisodes seront générés automatiquement).</p>
+                    <input type="text" name="lien_final" value="">
+                {% else %}
+                    <p class="approve-info approve-movie">🔴 Il s'agit d'un film. Le lien de votre extracteur est obligatoire.</p>
+                    <input type="text" name="lien_final" value="" required>
+                {% endif %}
+                <button type="submit" class="approve-submit">Valider et Publier</button>
+            </form>
+        </div>
+    </div>
 </body>
 </html>

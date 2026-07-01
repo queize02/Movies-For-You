@@ -1,18 +1,31 @@
 /* Centrage total de la page */
-body {
+html, body {
     margin: 0;
     padding: 0;
     width: 100%;
-    min-height: 100vh; /* Prend toute la hauteur de l'écran */
-    display: flex;
-    justify-content: center; /* Centre horizontalement */
-    align-items: center;     /* Centre verticalement */
+    min-height: 100%;
     background-color: #000000;
     font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+}
 
+body {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    padding: 20px;
+    color: white;
 }
 
 /* La boîte noire du formulaire */
+.admin-box {
+    width: min(100%, 420px);
+    padding: 40px;
+    background-color: #0e0e0e;
+    border-radius: 18px;
+    box-sizing: border-box;
+    margin: auto;
+}
 
 h1 {
     color: rgb(225, 225, 225);
@@ -56,70 +69,102 @@ button[type="submit"]:hover {
     background-color: #f6121d;
 }
 
-/* Style des messages d'alerte */
-.alert {
-    padding: 12px;
-    margin-bottom: 20px;
-    border-radius: 4px;
+.flash-alert {
+    color: #ff4d4d;
+    background: rgba(255, 77, 77, 0.1);
+    padding: 10px;
+    border-radius: 5px;
+    margin-bottom: 15px;
+    border: 1px solid #ff4d4d;
     text-align: center;
-    font-weight: bold;
+    font-size: 0.9rem;
+}
+
+.success-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.9);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 9999;
+    padding: 20px;
+}
+
+.success-overlay .overlay-card {
+    background: #1a1a1a;
+    padding: 30px;
+    border-radius: 12px;
+    border: 2px solid #46d369;
+    box-shadow: 0 0 20px rgba(70, 211, 105, 0.4);
+    width: min(100%, 400px);
+    text-align: center;
+}
+
+.overlay-icon {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    background: #111;
+    border: 3px solid #46d369;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin: 0 auto 20px;
+}
+
+.overlay-icon span {
+    color: #46d369;
+    font-size: 2.4rem;
+}
+
+.overlay-title,
+.overlay-text {
+    margin: 0;
     color: white;
 }
 
-/* Erreur en Orange Netflix */
-.alert.error {
-    background-color: #e87c03;
-}
-
-/* Succès en Vert */
-.alert.success {
-    background-color: #2ecc71;
+.overlay-text {
+    color: #bbb;
+    margin-top: 10px;
 }
 
 .switch-text {
     margin-top: 30px;
     color: #ffffff;
     text-align: center;
-    font-weight: bold   ;
+    font-weight: bold;
 }
+
 .switch-text a {
     color: rgb(255, 0, 0);
     text-decoration: none;
-    
 }
 
 .switch-text a:hover {
     text-decoration: underline;
 }
 
-/* --- Correction pour mobile --- */
-/* Nettoyage total */
-
-
-/* La boîte noire */
-.admin-box {
-    width: 90%;          /* 90% sur mobile */
-    max-width: 450px;    /* Max 450px sur PC */
-    padding: 40px;
-    background-color: #0e0e0ea6;
-    border-radius: 18px;
-    box-sizing: border-box; /* IMPORTANT : empêche le padding de déborder */
-    justify-content: center; /* Centre horizontalement */
-    align-items: center;     /* Centre verticalement */
-}
-/* Les inputs doivent être fluides */
-
-/*PARTIE MOBILE*/
-
 @media (max-width: 768px) {
-    .admin-box {
-        width: 100%; /* Prend toute la largeur sur mobile */
-        min-height: 100vh; /* Prend toute la hauteur de l'écran */
-        margin-top: 20px; /* Supprime les marges inutiles */
-        justify-content: center; /* Centre horizontalement */
-        align-items: center;     /* Centre verticalement */
-        background-color: #000000;
+    body {
+        align-items: flex-start;
+        padding: 20px 10px;
     }
-
+    .admin-box {
+        width: min(100%, 420px);
+        padding: 30px;
+        margin: 20px auto;
+        background-color: #0e0e0e;
+    }
+    h1 {
+        font-size: clamp(1.8rem, 4vw, 2.4rem);
+        margin-bottom: 20px;
+    }
+    input[type="text"],
+    input[type="password"],
+    button[type="submit"] {
+        font-size: 0.95rem;
+        height: 45px;
+    }
 }
 /* --- CATALOGUE HORIZONTAL FORCE --- */

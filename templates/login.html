@@ -14,7 +14,7 @@
         {% with messages = get_flashed_messages() %}
           {% if messages %}
             {% for message in messages %}
-              <div style="color: #ff4d4d; background: rgba(255, 77, 77, 0.1); padding: 10px; border-radius: 5px; margin-bottom: 15px; border: 1px solid #ff4d4d; text-align: center; font-size: 0.9rem;">
+              <div class="flash-alert">
                 {{ message }}
               </div>
             {% endfor %} {% endif %}
@@ -28,12 +28,14 @@
 
         <p class="switch-text">Pas de compte ? <a href="/register">S'inscrire</a></p>
     </div> {% if success %}
-    <div id="overlay" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgb(0, 0, 0); display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 9999;">
-        <div style="border: 4px solid #46d369; border-radius: 50%; width: 80px; height: 80px; display: flex; justify-content: center; align-items: center; margin-bottom: 20px;">
-            <span style="color: #46d369; font-size: 50px;">✔</span>
+    <div id="overlay" class="success-overlay">
+        <div class="overlay-card">
+            <div class="overlay-icon">
+                <span>✔</span>
+            </div>
+            <h2 class="overlay-title">Connexion réussie !</h2>
+            <p class="overlay-text">Redirection vers votre catalogue...</p>
         </div>
-        <h2 style="color: white; font-family: sans-serif;">Connexion réussie !</h2>
-        <p style="color: #888; font-family: sans-serif;">Redirection vers votre catalogue...</p>
     </div>
     <script>
         setTimeout(function() {

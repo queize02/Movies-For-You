@@ -25,6 +25,75 @@
             color: white;
             border-radius: 4px;
         }
+
+        .admin-manual-wrapper {
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            background: #141414;
+        }
+
+        .admin-manual-card {
+            width: min(100%, 420px);
+            background: #1f1f1f;
+            padding: 40px;
+            border-radius: 15px;
+            border: 1px solid #e50914;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+            box-sizing: border-box;
+        }
+
+        .admin-manual-card label {
+            display: block;
+            margin-bottom: 8px;
+            color: white;
+            font-weight: 600;
+        }
+
+        .admin-manual-card input {
+            width: 100%;
+            padding: 12px;
+            margin-top: 5px;
+            margin-bottom: 20px;
+            border-radius: 5px;
+            border: none;
+            background: #333;
+            color: white;
+            box-sizing: border-box;
+        }
+
+        .admin-manual-card .manual-field {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-bottom: 18px;
+        }
+
+        .admin-manual-card .manual-footer {
+            margin-top: 20px;
+            text-align: center;
+        }
+
+        .admin-manual-card .manual-footer a {
+            color: #aaa;
+            text-decoration: none;
+            font-size: 14px;
+        }
+
+        .admin-manual-card .btn-submit {
+            width: 100%;
+            padding: 15px;
+            font-size: 1rem;
+        }
+
+        .admin-manual-card .back-link {
+            display: inline-block;
+            margin-top: 20px;
+            width: 100%;
+            text-align: center;
+        }
         .btn-submit {
             background: #e50914;
             color: white;
@@ -42,4 +111,25 @@
         h1{
             color: #e50914;
              margin-bottom: 20px;
+        }
+
+        @media (max-width: 768px) {
+            .admin-container {
+                max-width: 100%;
+                margin: 20px 10px;
+                padding: 20px;
+            }
+            .admin-form {
+                gap: 12px;
+            }
+            .btn-submit {
+                width: 100%;
+                padding: 12px;
+            }
+            .back-link {
+                margin-top: 12px;
+            }
+            h1 {
+                font-size: 1.9rem;
+            }
         }
