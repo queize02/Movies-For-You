@@ -6,20 +6,19 @@ import hashlib
 import os
 
 # --- NOUVELLE FONCTION POUR LES NOTIFICATIONS ---
+# 1. Mettez à jour la fonction d'envoi en haut du fichier :
 def envoyer_notification_discord(titre, media_type, user, affiche, film_id=None):
-    data = {
-        "titre": titre,
-        "media_type": media_type, # 'movie' ou 'tv'
-        "user": user,
-        "affiche": affiche,
-        "film_id": film_id
-    }
+    data = {"titre": titre, "media_type": media_type, "user": user, "affiche": affiche, "film_id": film_id}
+    # URL interne au réseau Docker
+    url_bot = "http://bot_discord:10000/nouvelle-suggestion"
     try:
-        print(f"DEBUG: Envoi notif pour {titre} de type {media_type}")
-        requests.post("http://bot_discord:10000/nouvelle-suggestion", json=data, timeout=10)
+        requests.post(url_bot, json=data, timeout=5)
     except Exception as e:
-        print(f"DEBUG: Erreur notification locale : {e}")
+        print(f"Erreur envoi bot : {e}")
 
+# 2. Mettez à jour l'appel dans la route admin_approuver_request :
+# Remplacez l'ancien 'requests.post("https://bot-js-l8hi.onrender.com/admin_manuel"...' par :
+# envoyer_notification_discord(film['titre'], media_type, session.get('user'), film['affiche'])
 
 DATABASE_URL = "postgresql://admin:02082008@192.168.1.13:5432/neondb"
 def get_db_connection():
@@ -270,42 +269,62 @@ def index():
 
 @app.route('/admin_ajouter', methods=['GET', 'POST'])
 def admin_ajouter():
-    # 1. Gestion de l'affichage du formulaire (GET)
-    if request.method == 'GET':
-        return render_template('admin.html')
+    if 'user' not in session: 
+        return redirect(url_for('login'))
+    
+    if request.method == 'POST':
+        titre_film = request.form.get('titre')
+        params = {"api_key": TMDB_API_KEY, "query": titre_film.strip(), "language": "fr-FR"}
+        
+        try:
+            # Recherche du film/série sur TMDB
+            response = requests.get("https://api.themoviedb.org/3/search/multi", params=params, timeout=5).json()
+            results = [r for r in response.get('results', []) 
+                       if r.get('media_type') in ['movie', 'tv'] 
+                       and r.get('poster_path')]
+            results.sort(key=lambda x: x.get('popularity', 0), reverse=True)
 
-    # 2. Traitement de l'envoi du formulaire (POST)
-    try:
-        # Récupération des données du formulaire
-        titre = request.form.get('titre')
-        # Si 'type' et 'affiche' sont absents du HTML, on leur donne une valeur par défaut
-        media_type = request.form.get('type', 'movie') 
-        affiche_url = request.form.get('affiche', '') 
-        user = session.get('username', 'Utilisateur')
+            if results:
+                film = results[0]
+                media_type = film['media_type']
+                titre = film.get('title') or film.get('name')
+                affiche_url = f"https://image.tmdb.org/t/p/w500{film['poster_path']}"
+                
+                categorie_auto = recuperer_categorie_film(titre, media_type)
+                
+                # Insertion en Base de Données
+                conn = get_db_connection()
+                cur = conn.cursor(cursor_factory=DictCursor)
+                if media_type == 'tv':
+                    cur.execute("""
+                        INSERT INTO series (titre, affiche, description, status, categorie, tmdb_id)
+                        VALUES (%s, %s, %s, 'pending', %s, %s) RETURNING id
+                    """, (titre, affiche_url, film.get('overview', ''), categorie_auto, film['id']))
+                else:
+                    cur.execute("""
+                        INSERT INTO films (titre, affiche, lien, description, status, categorie, tmdb_id, media_type)
+                        VALUES (%s, %s, 'auto', %s, 'pending', %s, %s, 'movie') RETURNING id
+                    """, (titre, affiche_url, film.get('overview', ''), categorie_auto, film['id']))
+                
+                film_id = cur.fetchone()['id']
+                conn.commit()
+                cur.close()
+                conn.close()
 
-        # Insertion en base de données
-        conn = get_db_connection()
-        cur = conn.cursor()
-        cur.execute(
-            "INSERT INTO suggestions (titre, type, affiche, utilisateur) VALUES (%s, %s, %s, %s)",
-            (titre, media_type, affiche_url, user)
-        )
-        conn.commit()
-        cur.close()
-        conn.close()
+                # Notification Discord unique et corrigée
+               
+                envoyer_notification_discord(titre, media_type, session.get('user', 'Admin'), affiche_url, film_id) 
 
-        # Envoi de la notification Discord
-        # On utilise le nom de service 'bot_discord' défini dans ton docker-compose
-        envoyer_notification_discord(titre, media_type, user, affiche_url)
-
-        flash(f"✅ Merci ! La suggestion pour {titre} a été ajoutée.")
-        return redirect(url_for('admin_ajouter'))
-
-    except Exception as e:
-        print(f"DEBUG: Erreur dans admin_ajouter : {e}")
-        flash("❌ Une erreur est survenue lors de l'ajout.")
-        return redirect(url_for('admin_ajouter'))
-
+                flash("✅ Merci ! Ta suggestion a été envoyée.")
+                return redirect(url_for('admin_ajouter'))
+            else:
+                flash("❌ Aucun film/série trouvé avec ce titre.")
+        
+        except Exception as e:
+            print(f"DEBUG: Erreur dans admin_ajouter : {e}")
+            flash("❌ Une erreur est survenue lors de l'ajout.")
+           
+    return render_template('admin.html')
 @app.route('/admin_manuel', methods=['GET', 'POST'])
 def admin_manuel():
     current_user = session.get('user', '').lower()
@@ -367,65 +386,45 @@ def logout():
 
 @app.route('/admin_approuver/<string:media_type>/<int:media_id>', methods=['GET', 'POST'])
 def admin_approuver_request(media_type, media_id):
-    if 'user' not in session or not is_admin():
+    if 'user' not in session or not is_admin(): 
         return "Accès refusé", 403
-
+    
     conn = get_db_connection()
     cur = conn.cursor(cursor_factory=DictCursor)
-
     table = 'series' if media_type == 'tv' else 'films'
     cur.execute(f"SELECT * FROM {table} WHERE id = %s", (media_id,))
     film = cur.fetchone()
-
+    
+    # Sécurité : si le média n'existe pas en BDD
+    if not film:
+        cur.close(); conn.close()
+        flash("Média introuvable.")
+        return redirect(url_for('index'))
+    
     if request.method == 'POST':
-        lien_final = request.form.get('lien_final')
-        
-        if film:
-            categorie_auto = recuperer_categorie_film(film['titre'], media_type)
-            if media_type == 'tv':
-                cur.execute(
-                    "UPDATE series SET status = 'approved', categorie = %s WHERE id = %s",
-                    (categorie_auto, media_id)
-                )
-            else:
-                cur.execute(
-                    "UPDATE films SET status = 'approved', lien = %s, categorie = %s WHERE id = %s",
-                    (lien_final, categorie_auto, media_id)
-                )
-            conn.commit()
-
-            print("DEBUG: Tentative d'envoi de la notification au bot...")
-            try:
-                reponse = requests.post("https://bot-js-l8hi.onrender.com/admin_manuel", json={
-                    "titre": film['titre'],
-                    "affiche": film['affiche']
-                }, timeout=10)
-                print(f"DEBUG: Réponse du bot : {reponse.status_code}")
-            except Exception as e:
-                print(f"DEBUG: Erreur envoi : {e}")
-        cur.close()
-        conn.close()
-        return redirect(url_for('index'))
-
-    return render_template('approve_form.html', movie_id=media_id, tmdb_id=film['tmdb_id'], media_type=media_type)
- 
-@app.route('/admin_supprimer/<string:media_type>/<int:media_id>', methods=['POST'])
-def admin_supprimer(media_type, media_id):
-    if 'user' not in session or not is_admin():
-        flash("🔴 Accès refusé.")
-        return redirect(url_for('index'))
-    try:
-        conn = get_db_connection()
-        cur = conn.cursor()
-        table = 'series' if media_type == 'tv' else 'films'
-        cur.execute(f"DELETE FROM {table} WHERE id = %s", (media_id,))
+        # ... (votre logique SQL actuelle de UPDATE reste ici) ...
+        # Exemple: 
+        # cur.execute(f"UPDATE {table} SET status = 'approved' WHERE id = %s", (media_id,))
         conn.commit()
-        cur.close()
-        conn.close()
-        flash("🗑️ Le média a été supprimé.")
-    except Exception as e:
-        flash(f"Erreur : {e}")
-    return redirect(url_for('index'))
+        
+        # APPEL VERS LE BOT DANS DOCKER
+        # On utilise le nom de service 'bot_discord' défini dans votre docker-compose.yml
+        try:
+            payload = {
+                "titre": film.get('titre', 'Inconnu'),
+                "affiche": film.get('affiche', ''),
+                "media_type": media_type
+            }
+            requests.post("http://bot_discord:10000/admin_manuel", json=payload, timeout=3)
+        except Exception as e:
+            # On logue l'erreur mais on ne bloque pas l'utilisateur si le bot est injoignable
+            print(f"DEBUG: Notification Discord échouée (bot peut-être hors-ligne) : {e}")
+            
+        cur.close(); conn.close()
+        return redirect(url_for('index'))
+        
+    cur.close(); conn.close()
+    return render_template('approve_form.html', movie_id=media_id, media_type=media_type)
 
 @app.route('/movie/<int:movie_id>')
 def voir_film(movie_id):
@@ -490,7 +489,7 @@ def api_discord_suggerer():
             cur.execute("""
                 INSERT INTO films (titre, affiche, lien, description, status, categorie, tmdb_id, media_type)
                 VALUES (%s, %s, 'auto', %s, 'pending', %s, %s, 'movie') RETURNING id
-            """, (titre, f"https://image.tmdb.org/t/p/w500{film['poster_path']}", "auto", film.get('overview', ''), categorie_auto, film['id']))
+            """, (titre, f"https://image.tmdb.org/t/p/w500{film['poster_path']}", film.get('overview', ''), categorie_auto, film['id']))
         film_id = cur.fetchone()[0]
         conn.commit()
         cur.close()
@@ -585,6 +584,24 @@ def git_webhook():
         return jsonify({"status": "error", "message": "La commande 'git' n'est pas installée dans le conteneur Docker."}), 500
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 500
+
+
+@app.route('/admin_supprimer/<string:media_type>/<int:media_id>', methods=['POST'])
+def admin_supprimer(media_type, media_id):
+    if not is_admin():
+        return "Accès refusé", 403
+    
+    conn = get_db_connection()
+    cur = conn.cursor()
+    table = 'series' if media_type == 'tv' else 'films'
+    cur.execute(f"DELETE FROM {table} WHERE id = %s", (media_id,))
+    conn.commit()
+    cur.close()
+    conn.close()
+    
+    flash(f"✅ Média supprimé avec succès.")
+    return redirect(url_for('admin_dashboard'))
+
 
 if __name__ == '__main__':
     with app.app_context():

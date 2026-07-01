@@ -1,22 +1,30 @@
 <!DOCTYPE html>
 <html lang="fr">
-<body style="background: #141414; color: white; padding: 20px;">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Films en attente</title>
+    <script src="https://kit.fontawesome.com/041b1dc342.js" crossorigin="anonymous"></script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='admin_dashboard.css') }}">
+</head>
+<body>
+            <a id="home-link" href="{{ url_for('index') }}"><i class="fa-solid fa-house"></i> Retour à l'accueil</a>
     <h1>Films en attente</h1>
-    <form method="POST" style="margin-bottom: 30px; padding: 20px; background: #222; border: 1px solid #e50914;">
+    <form method="POST" class="search-form">
         <input type="text" name="search_titre" placeholder="Rechercher un film à ajouter..." required>
         <button type="submit">Rechercher</button>
     </form>
 
     {% if search_results %}
-    <div style="display: flex; gap: 20px; margin-bottom: 30px;">
+    <div class="search-results">
         {% for film in search_results %}
-        <div style="text-align: center; border: 1px solid #555; padding: 10px;">
-            <img src="https://image.tmdb.org/t/p/w200{{ film.poster_path }}" style="width: 100px;">
+        <div class="result-card">
+            <img src="https://image.tmdb.org/t/p/w200{{ film.poster_path }}" class="result-image" alt="{{ film.title or film.name }}">
             <p>{{ film.title or film.name }}</p>
             <form action="/admin_valider_choix" method="POST">
                 <input type="hidden" name="tmdb_id" value="{{ film.id }}">
                 <input type="hidden" name="media_type" value="{{ film.media_type }}">
-                <button type="submit">Ajouter</button>
+                <button type="submit" class="add-button">Ajouter</button>
             </form>
         </div>
         {% endfor %}
@@ -24,17 +32,19 @@
     {% endif %}
 
     {% for film in films %}
-    <div style="border: 1px solid #444; padding: 10px; margin-bottom: 10px; display: flex; align-items: center;">
-        <img src="{{ film['affiche'] }}" width="50" style="margin-right: 15px;">
-        <p style="flex-grow: 1;"><strong>[{{ 'SÉRIE' if film.get('media_type') == 'tv' else 'FILM' }}]</strong> {{ film['titre'] }}</p>
-        <form action="{{ url_for('admin_approuver_request', media_type=film.get('media_type', 'movie'), media_id=film['id']) }}" method="GET">
-            <button type="submit" style="background: green; color: white; padding: 10px; border: none; cursor: pointer;">Approuver</button>
+    <div class="media-item">
+        <img src="{{ film['affiche'] }}" alt="{{ film['titre'] }}" class="media-image">
+        <p class="media-title"><strong>[{{ 'SÉRIE' if film.get('media_type') == 'tv' else 'FILM' }}]</strong> {{ film['titre'] }}</p>
+        <form action="{{ url_for('admin_approuver_request', media_type=film.get('media_type', 'movie'), media_id=film['id']) }}" method="GET" class="action-form">
+            <button type="submit" class="approve-button">Approuver</button>
         </form>
-        <form action="{{ url_for('admin_supprimer', media_type=film.get('media_type', 'movie'), media_id=film['id']) }}" method="POST" style="margin-left: 10px;">
-            <button type="submit" style="background: #880000; color: white; border: none; padding: 10px; cursor: pointer;">Supprimer</button>
+        <form action="{{ url_for('admin_supprimer', media_type=film.get('media_type', 'movie'), media_id=film['id']) }}" method="POST" class="action-form delete-form">
+            <button type="submit" class="delete-button">Supprimer</button>
         </form>
+        
+
     </div>
-    {% endfor %}
     
+    {% endfor %}
 </body>
 </html>

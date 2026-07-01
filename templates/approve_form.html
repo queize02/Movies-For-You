@@ -2,7 +2,7 @@
 <html lang="fr">
 <body style="background: #141414; color: white; font-family: sans-serif; padding: 20px;">
     <h1>Approuver le film</h1>
-<form action="{{ url_for('admin_approuver_request', media_type=media_type, media_id=movie_id) }}" method="POST">
+<form action="{{ url_for('admin_supprimer', media_type=film.get('media_type', 'movie'), media_id=film['id']) }}" method="POST" ...>
     <label>Lien Embed (VF) :</label><br>
     
     {% if media_type == 'tv' %}
