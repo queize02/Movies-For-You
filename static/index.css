@@ -162,16 +162,32 @@ html, body {
     100% { transform: rotate(360deg); }
 }
 
+
+
+.btn-delete {
+    background-color: #ff0202;
+    color: white;
+    padding: 10px 15px;
+    border-radius: 4px;
+    text-decoration: none;
+    font-weight: bold;
+    transition: background-color 0.3s;
+}
+
+
 /* --- CATALOGUE / GRILLE --- */
 .container {
+    max-width: 1200px;
+    margin: 0 auto;
     padding: 100px 4% 40px 4%; /* Padding top pour compenser la navbar fixe */
 }
 
 .Catalogue {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-    gap: 20px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
     align-items: start;
+    justify-content: flex-start;
 }
 
 .film-card {
@@ -179,16 +195,53 @@ html, body {
     border-radius: 8px;
     overflow: hidden;
     transition: transform 0.3s;
+    width: 180px;
+    flex-shrink: 0;
+    margin: 0;
+    position: relative;
 }
 
 .film-card:hover {
-    transform: scale(1.05);
+    transform: scale(1.03);
 }
 
 .film-card img {
     width: 100%;
     height: auto;
+    display: block;
 }
+
+.media-badge {
+    position: absolute;
+    top: 12px;
+    left: 12px;
+    padding: 6px 10px;
+    background: rgba(0, 0, 0, 0.75);
+    color: #fff;
+    font-size: 0.82rem;
+    border-radius: 6px;
+    z-index: 2;
+}
+
+.film-title {
+    margin: 12px 12px 6px;
+    font-size: 1rem;
+    line-height: 1.25;
+}
+
+.buttons {
+    display: grid;
+    gap: 10px;
+    padding: 0 12px 14px;
+    margin-top: 10px;
+}
+
+.buttons .btn-watch,
+.buttons .btn-delete {
+    text-align: center;
+    width: 100%;
+}
+
 
 
 
@@ -338,10 +391,18 @@ padding-left: 20px;
 }
 
 
-/* --- VERSION MOBILE --- */
+/* --- MOBILE / TABLET --- */
 @media (max-width: 768px) {
     .container {
         padding: 90px 6% 40px;
+    }
+
+    .Catalogue {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 16px;
+        align-items: start;
+        justify-content: flex-start;
     }
 
     .nav-toggle {
@@ -425,12 +486,33 @@ padding-left: 20px;
     }
 
     .film-card {
-        width: 100% !important;
-        max-width: 100% !important;
+        width: calc(50% - 8px) !important;
+        max-width: 220px !important;
+        flex-shrink: 0 !important;
     }
 
     .film-card img {
         height: 200px !important;
+        object-fit: cover !important;
+        width: 100% !important;
+    }
+
+    .media-badge {
+        top: 10px !important;
+        left: 10px !important;
+        padding: 6px 10px !important;
+        font-size: 0.82rem !important;
+    }
+
+    .film-title {
+        margin: 12px 12px 8px !important;
+        font-size: 1rem !important;
+    }
+
+    .buttons {
+        gap: 10px !important;
+        padding: 0 12px 14px !important;
+        margin-top: 10px !important;
     }
 
     .navbar {
@@ -438,19 +520,10 @@ padding-left: 20px;
     }
 }
 
+/* --- MOBILE / PHONE --- */
 @media (max-width: 480px) {
     .container {
         padding: 90px 4% 30px;
-    }
-
-    .film-card {
-        flex: 1 1 100% !important;
-        width: 100% !important;
-        max-width: 100% !important;
-    }
-
-    .film-card img {
-        height: auto !important;
     }
 
     .navbar nav ul {
@@ -469,9 +542,22 @@ padding-left: 20px;
     }
 
     .Catalogue {
-        gap: 14px;
+        gap: 10px;
     }
-    .navbar{
+
+    .film-card {
+        width: calc(50% - 5px) !important;
+        max-width: none !important;
+        margin-bottom: 0 !important;
+    }
+
+    .film-card img {
+        height: 180px !important;
+        object-fit: cover !important;
+        width: 100% !important;
+    }
+
+    .navbar {
         border-bottom: none !important;
     }
 }
