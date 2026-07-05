@@ -3,22 +3,23 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Extracteur de Séries</title>
+    <title>Extracteur MFY</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='index.css') }}">
     <style>
         body { background: #141414; color: white; font-family: sans-serif; padding: 20px; text-align: center; }
         .container { max-width: 600px; margin: 40px auto; background: #1f1f1f; padding: 30px; border-radius: 8px; text-align: left; }
         label { font-weight: bold; margin-top: 15px; display: block; color: #ccc; }
-        input { width: 100%; padding: 12px; margin: 8px 0; border-radius: 4px; border: 1px solid #333; background: #333; color: white; box-sizing: border-box; font-size: 1rem; }
+        input, select { width: 100%; padding: 12px; margin: 8px 0; border-radius: 4px; border: 1px solid #333; background: #333; color: white; box-sizing: border-box; font-size: 1rem; }
         button { width: 100%; padding: 15px; background: #e50914; color: white; border: none; border-radius: 4px; font-weight: bold; cursor: pointer; margin-top: 20px; font-size: 1.1rem;}
         button:hover { background: #f40612; }
         .terminal { background: #000; color: #0f0; font-family: monospace; padding: 15px; border-radius: 4px; height: 300px; overflow-y: auto; margin-top: 20px; line-height: 1.4; word-wrap: break-word; }
+        .hidden { display: none; }
     </style>
 </head>
 <body>
     <div class="container">
         <a href="{{ url_for('admin_dashboard') }}" style="color: #e50914; text-decoration: none; font-weight: bold;">← Retour au Dashboard</a>
-        <h2 style="margin-top: 20px; color: white;">Extracteur French Stream</h2>
+        <h2 style="margin-top: 20px; color: white;">Robot Extracteur MFY</h2>
         
         {% if is_extracting %}
             <p style="color: orange; font-weight: bold; font-size: 1.1rem;">⏳ Une extraction est en cours en arrière-plan...</p>
@@ -45,20 +46,46 @@
             <style>@keyframes blink { 50% { opacity: 0; } }</style>
         {% else %}
             <form method="POST">
-                <label>URL French Stream :</label>
-                <input type="text" name="url" placeholder="ex: https://fs15.lol/123-serie.html" required>
+                <label>Type de média :</label>
+                <select name="media_type" id="media_type" onchange="toggleFields()">
+                    <option value="serie">Série</option>
+                    <option value="film">Film</option>
+                </select>
+
+                <label>URL Source :</label>
+                <input type="text" name="url" placeholder="ex: https://fs15.lol/... ou https://vidzy.com/..." required>
                 
-                <label>Numéro de Saison :</label>
-                <input type="number" name="saison" placeholder="ex: 1" required>
+                <div id="serie_fields">
+                    <label>Numéro de Saison :</label>
+                    <input type="number" name="saison" id="saison" placeholder="ex: 1">
+                    
+                    <label>Nombre d'épisodes :</label>
+                    <input type="number" name="nb_eps" id="nb_eps" placeholder="ex: 8">
+                </div>
                 
-                <label>Nombre d'épisodes :</label>
-                <input type="number" name="nb_eps" placeholder="ex: 8" required>
-                
-                <label>ID de la Série (Base de données) :</label>
-                <input type="number" name="series_id" placeholder="ex: 15" required>
+                <label>ID en Base de données :</label>
+                <input type="number" name="media_id" placeholder="ex: 15" required>
                 
                 <button type="submit">🚀 Lancer l'extraction</button>
             </form>
+            <script>
+                function toggleFields() {
+                    const type = document.getElementById('media_type').value;
+                    const serieFields = document.getElementById('serie_fields');
+                    const saison = document.getElementById('saison');
+                    const nbEps = document.getElementById('nb_eps');
+                    if (type === 'film') {
+                        serieFields.classList.add('hidden');
+                        saison.removeAttribute('required');
+                        nbEps.removeAttribute('required');
+                    } else {
+                        serieFields.classList.remove('hidden');
+                        saison.setAttribute('required', 'required');
+                        nbEps.setAttribute('required', 'required');
+                    }
+                }
+                toggleFields();
+            </script>
         {% endif %}
     </div>
 </body>

@@ -605,6 +605,7 @@ def git_webhook():
 
 
 from extract_fs import lancer_extraction, extraction_logs
+from extract_iframe import extraire_et_sauvegarder
 is_extracting = False
 
 @app.route('/admin/extract', methods=['GET', 'POST'])
@@ -614,18 +615,24 @@ def admin_extract():
     
     global is_extracting
     if request.method == 'POST':
+        media_type = request.form.get('media_type')
         url = request.form.get('url')
+        media_id = request.form.get('media_id')
         saison = request.form.get('saison')
         nb_eps = request.form.get('nb_eps')
-        series_id = request.form.get('series_id')
         
-        if not is_extracting and url and saison and nb_eps and series_id:
+        if not is_extracting and url and media_id:
             is_extracting = True
             
             def thread_target():
                 global is_extracting
                 try:
-                    lancer_extraction(url, int(saison), int(nb_eps), int(series_id))
+                    if media_type == 'serie' and saison and nb_eps:
+                        lancer_extraction(url, int(saison), int(nb_eps), int(media_id))
+                    elif media_type == 'film':
+                        extraire_et_sauvegarder(url, int(media_id))
+                    else:
+                        extraction_logs.append("Erreur: Données manquantes.")
                 except Exception as e:
                     extraction_logs.append(f"Erreur fatale: {e}")
                 finally:
