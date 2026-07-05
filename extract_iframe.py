@@ -74,50 +74,56 @@ def extraire_et_sauvegarder(url, film_id):
         prendre_screenshot(page)
 
         # 1. Cliquer sur le triangle ORANGE (le couvre-feu de la vidéo)
-        log("🟠 Clic sur le triangle orange pour charger le lecteur...")
+        log("🟠 Clic sur le triangle orange (3 tentatives pour passer les pubs)...")
         try:
-            # Sélecteurs spécifiques (sans wildcard qui pourrait matcher "player-option")
-            selectors_orange = [
-                ".play-btn", ".play-icon", ".play-trigger", ".player-overlay",
-                "div.play", "a.play", "button.play", ".vjs-big-play-button"
-            ]
-            clique = False
-            for sel in selectors_orange:
-                try:
-                    btn = page.locator(sel).first
-                    if btn.is_visible(timeout=1500):
-                        btn.click(force=True)
-                        log(f"✅ Triangle orange cliqué via selector '{sel}'")
-                        clique = True
-                        break
-                except:
-                    continue
-            
-            if not clique:
-                # Tentative 2 : Clic au centre du conteneur du lecteur
-                player_selector = None
-                for sel in ["#player", ".film-player", "#video-player", ".player-container", ".video-js"]:
+            for click_num in range(1, 4):
+                log(f"   👉 Clic #{click_num}...")
+                clique = False
+                
+                # Sélecteurs spécifiques (sans wildcard)
+                selectors_orange = [
+                    ".play-btn", ".play-icon", ".play-trigger", ".player-overlay",
+                    "div.play", "a.play", "button.play", ".vjs-big-play-button"
+                ]
+                for sel in selectors_orange:
                     try:
-                        el = page.locator(sel).first
-                        if el.is_visible(timeout=1000):
-                            player_selector = sel
+                        btn = page.locator(sel).first
+                        if btn.is_visible(timeout=800):
+                            btn.click(force=True)
+                            log(f"      ✅ Cliqué via selector '{sel}'")
+                            clique = True
                             break
                     except:
                         continue
                 
-                if player_selector:
-                    log(f"🎯 Lecteur détecté via '{player_selector}', clic au centre...")
-                    page.locator(player_selector).first.click(force=True)
-                    clique = True
+                if not clique:
+                    # Tentative 2 : Clic au centre du conteneur du lecteur
+                    player_selector = None
+                    for sel in ["#player", ".film-player", "#video-player", ".player-container", ".video-js"]:
+                        try:
+                            el = page.locator(sel).first
+                            if el.is_visible(timeout=500):
+                                player_selector = sel
+                                break
+                        except:
+                            continue
+                    
+                    if player_selector:
+                        page.locator(player_selector).first.click(force=True)
+                        log(f"      🎯 Cliqué au centre de '{player_selector}'")
+                        clique = True
+                    
+                if not clique:
+                    # Tentative 3 : clic absolu au centre de l'écran (640, 360)
+                    page.mouse.click(640, 360)
+                    log("      ⚠️ Cliqué au centre de l'écran (640, 360)")
                 
-            if not clique:
-                # Tentative 3 : clic absolu au centre de l'écran (640, 360)
-                log("⚠️ Aucun bouton trouvé, clic au centre de l'écran (640, 360)...")
-                page.mouse.click(640, 360)
+                time.sleep(1.5)
+                prendre_screenshot(page)
         except Exception as e:
             log(f"⚠️ Erreur clic orange : {e}")
         
-        time.sleep(5)
+        time.sleep(3)
         prendre_screenshot(page)
 
         # 2. Extraction et Sauvegarde (recherche récursive des iframes imbriquées)
