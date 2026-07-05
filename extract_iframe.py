@@ -92,85 +92,46 @@ def extraire_et_sauvegarder(url, film_id):
             log(f"⚠️ Erreur clic orange : {e}")
         
         time.sleep(3)
-        
-        # 2. Cliquer sur VIDZY (pour obtenir le vrai lecteur et pas fsurl.lol)
-        log("📺 Sélection du lecteur VIDZY / UQLOAD...")
-        try:
-            vidzy_selectors = [
-                "button.player-option[data-player='ViDZY']",
-                "button[data-player='ViDZY']",
-                "a[data-player='ViDZY']",
-                "button.player-option[data-player='UQLOAD']",
-            ]
-            for sel in vidzy_selectors:
-                try:
-                    btn = page.locator(sel).first
-                    if btn.is_visible(timeout=2000):
-                        btn.click(force=True)
-                        log(f"✅ Lecteur cliqué via '{sel}'")
-                        break
-                except:
-                    continue
-        except Exception as e:
-            log(f"⚠️ Erreur clic lecteur alternatif : {e}")
 
-        time.sleep(3)
-
-        # 3. Extraction et Sauvegarde
+        # 2. Extraction et Sauvegarde (recherche récursive des iframes imbriquées)
         src = None
         
-        domaines_exclus = [
-            "youtube.com", "youtu.be", "vimeo.com",
-            "doubleclick.net", "google.com", "googletagmanager.com",
-            "facebook.com", "twitter.com", "instagram.com",
-            "fsurl.lol", "sso.php"
+        # Liste des hébergeurs de vidéos valides (on cherche ces mots-clés dans les URLs des frames)
+        players_valides = [
+            "vidzy", "uqload", "voe", "dood", "filmmoon", "hqq", "netu", 
+            "fembed", "vidoza", "streamtape", "mixdrop"
         ]
         
-        def est_valide(url):
-            if not url or not url.startswith("http"):
-                return False
-            if "about:blank" in url:
-                return False
-            for domaine in domaines_exclus:
-                if domaine in url:
-                    return False
-            return True
+        log("🔍 Recherche du lecteur de streaming (vidzy, uqload, voe...) dans les frames de la page...")
         
-        log("🔍 Recherche d'une iframe de streaming sur la page...")
-        # Tentative : extraction du src de l'iframe
-        for _ in range(15):
+        # On va chercher pendant 15 secondes max si l'iframe du lecteur apparaît
+        for attempt in range(15):
             try:
-                # 1. Chercher id='seriePlayer' ou 'video-iframe'
-                src_candidate = page.evaluate('''
-                    () => {
-                        let iframe = document.getElementById('seriePlayer') || document.getElementById('video-iframe');
-                        if (iframe && iframe.src) return iframe.src;
-                        return null;
-                    }
-                ''')
-                if est_valide(src_candidate):
-                    src = src_candidate
-                    log(f"✅ Iframe trouvée par ID : {src[:80]}...")
-                    break
-                
-                # 2. Sinon, chercher toutes les iframes
-                iframes = page.locator("iframe").all()
-                for iframe in iframes:
-                    candidate = iframe.get_attribute("src")
-                    if est_valide(candidate):
-                        src = candidate
+                # page.frames contient toutes les frames de la page, y compris les iframes imbriquées !
+                for frame in page.frames:
+                    frame_url = frame.url
+                    if not frame_url or frame_url == "about:blank":
+                        continue
+                    
+                    # On vérifie si l'URL de cette frame appartient à un hébergeur de vidéo connu
+                    for player in players_valides:
+                        if player in frame_url.lower():
+                            src = frame_url
+                            log(f"✅ Lecteur de streaming détecté ({player}) : {src[:80]}...")
+                            break
+                    if src:
                         break
-                if src:
-                    log(f"✅ Iframe trouvée : {src[:80]}...")
-                    break
-            except:
+            except Exception as e:
                 pass
+                
+            if src:
+                break
             time.sleep(1)
             
         if src:
             save_iframe_url(film_id, src)
         else:
-            log("❌ Aucune iframe de streaming trouvée sur cette page.")
+            log("❌ Aucun lecteur de streaming valide (vidzy, uqload, voe...) trouvé sur la page.")
 
         log("👋 Fermeture de la page.")
         browser.close()
