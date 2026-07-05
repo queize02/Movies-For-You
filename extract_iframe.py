@@ -92,14 +92,38 @@ def extraire_et_sauvegarder(url, film_id):
             log(f"⚠️ Erreur clic orange : {e}")
         
         time.sleep(3)
+        
+        # 2. Cliquer sur VIDZY (pour obtenir le vrai lecteur et pas fsurl.lol)
+        log("📺 Sélection du lecteur VIDZY / UQLOAD...")
+        try:
+            vidzy_selectors = [
+                "button.player-option[data-player='ViDZY']",
+                "button[data-player='ViDZY']",
+                "a[data-player='ViDZY']",
+                "button.player-option[data-player='UQLOAD']",
+            ]
+            for sel in vidzy_selectors:
+                try:
+                    btn = page.locator(sel).first
+                    if btn.is_visible(timeout=2000):
+                        btn.click(force=True)
+                        log(f"✅ Lecteur cliqué via '{sel}'")
+                        break
+                except:
+                    continue
+        except Exception as e:
+            log(f"⚠️ Erreur clic lecteur alternatif : {e}")
 
-        # 2. Extraction et Sauvegarde
+        time.sleep(3)
+
+        # 3. Extraction et Sauvegarde
         src = None
         
         domaines_exclus = [
             "youtube.com", "youtu.be", "vimeo.com",
             "doubleclick.net", "google.com", "googletagmanager.com",
             "facebook.com", "twitter.com", "instagram.com",
+            "fsurl.lol", "sso.php"
         ]
         
         def est_valide(url):
