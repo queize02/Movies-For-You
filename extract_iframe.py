@@ -76,30 +76,48 @@ def extraire_et_sauvegarder(url, film_id):
         # 1. Cliquer sur le triangle ORANGE (le couvre-feu de la vidéo)
         log("🟠 Clic sur le triangle orange pour charger le lecteur...")
         try:
+            # Sélecteurs spécifiques (sans wildcard qui pourrait matcher "player-option")
             selectors_orange = [
-                ".play-btn", ".player-overlay", ".vjs-big-play-button",
-                "button[class*='play']", ".film-player .play",
-                "a[class*='play']", "#player .play",
+                ".play-btn", ".play-icon", ".play-trigger", ".player-overlay",
+                "div.play", "a.play", "button.play", ".vjs-big-play-button"
             ]
             clique = False
             for sel in selectors_orange:
                 try:
                     btn = page.locator(sel).first
-                    if btn.is_visible(timeout=2000):
+                    if btn.is_visible(timeout=1500):
                         btn.click(force=True)
-                        log(f"✅ Triangle orange cliqué via '{sel}'")
+                        log(f"✅ Triangle orange cliqué via selector '{sel}'")
                         clique = True
                         break
                 except:
                     continue
             
             if not clique:
-                log("⚠️ Sélecteur orange non trouvé, clic au centre de la page...")
-                page.mouse.click(512, 300)
+                # Tentative 2 : Clic au centre du conteneur du lecteur
+                player_selector = None
+                for sel in ["#player", ".film-player", "#video-player", ".player-container", ".video-js"]:
+                    try:
+                        el = page.locator(sel).first
+                        if el.is_visible(timeout=1000):
+                            player_selector = sel
+                            break
+                    except:
+                        continue
+                
+                if player_selector:
+                    log(f"🎯 Lecteur détecté via '{player_selector}', clic au centre...")
+                    page.locator(player_selector).first.click(force=True)
+                    clique = True
+                
+            if not clique:
+                # Tentative 3 : clic absolu au centre de l'écran (640, 360)
+                log("⚠️ Aucun bouton trouvé, clic au centre de l'écran (640, 360)...")
+                page.mouse.click(640, 360)
         except Exception as e:
             log(f"⚠️ Erreur clic orange : {e}")
         
-        time.sleep(3)
+        time.sleep(5)
         prendre_screenshot(page)
 
         # 2. Extraction et Sauvegarde (recherche récursive des iframes imbriquées)
