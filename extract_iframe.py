@@ -22,7 +22,7 @@ def save_iframe_url(film_id, iframe_src):
         conn.commit()
         cur.close()
         conn.close()
-        log(f"✅ Succès : Iframe {iframe_src} enregistrée en BDD pour l'ID {film_id}.")
+        log(f"✅ Succès : Iframe {iframe_src[:60]}... enregistrée en BDD pour l'ID {film_id}.")
     except Exception as e:
         log(f"❌ Erreur BDD : {e}")
 
@@ -31,51 +31,71 @@ def extraire_et_sauvegarder(url, film_id):
     log('='*60)
     log('🤖 EXTRACTEUR DE FILMS')
     log('='*60)
-    extension_path = os.path.abspath("ublock_extension") # Ton dossier d'extension
+    
+    extension_path = os.path.abspath("ublock_extension")
+    use_extension = os.path.isdir(extension_path)
 
     with sync_playwright() as p:
-        args = [f'--load-extension={extension_path}', f'--disable-extensions-except={extension_path}']
-        
-        browser = p.chromium.launch_persistent_context(
-            user_data_dir="./user_data",
-            headless=True,
-            args=args,
-            viewport={'width': 1280, 'height': 720}
-        )
-        
-        page = browser.pages[0]
-        page.goto(url, wait_until="networkidle")
-
-        # 1. Préparation (Vidzy)
-        page.locator("button.player-option[data-player='ViDZY']").click(force=True)
-        time.sleep(2)
-
-        # 2. Clics (Orange puis Rouge)
-       # 2. Clics (Orange puis Rouge)
-        page.mouse.click(640, 360) # Orange
-        time.sleep(3)
-        
-        # --- MODIFICATION ICI ---
-        log("👉 Tentative de clic sur triangle ROUGE (si présent)...")
-        try:
-            frame = page.frame_locator("iframe#video-iframe")
-            bouton_rouge = frame.locator(".vjs-big-play-button, .play-button").first
+        if use_extension:
+            log(f"🛡️ uBlock Origin détecté, chargement de l'extension...")
+            browser = p.chromium.launch_persistent_context(
+                user_data_dir="./user_data",
+                headless=True,
+                args=[
+                    f'--load-extension={extension_path}',
+                    f'--disable-extensions-except={extension_path}'
+                ],
+                viewport={'width': 1280, 'height': 720}
+            )
+            page = browser.pages[0]
+        else:
+            log(f"⚠️ Pas d'extension uBlock trouvée.")
+            browser = p.chromium.launch(headless=True)
+            context = browser.new_context(
+                user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+                viewport={'width': 1280, 'height': 720}
+            )
+            page = context.new_page()
             
-            # On vérifie la visibilité avant de cliquer
-            if bouton_rouge.is_visible():
-                bouton_rouge.click(force=True)
-                log("✅ Clic sur triangle rouge effectué.")
-            else:
-                log("ℹ️ Le triangle rouge est déjà masqué (le film est peut-être déjà lancé).")
-        except Exception:
-            log("ℹ️ Bouton rouge indisponible, passage à l'extraction.")
-        # ------------------------
+        # Fermer automatiquement les pop-ups (nouveaux onglets)
+        ctx = browser if use_extension else context
+        ctx.on("page", lambda new_page: new_page.close())
+        
+        log(f"🌐 Chargement de la page...")
+        page.goto(url, wait_until="domcontentloaded", timeout=60000)
+        time.sleep(3)
 
-        time.sleep(2)
-        # 3. Extraction et Sauvegarde — logique flexible
+        # 1. Cliquer sur le triangle ORANGE (le couvre-feu de la vidéo)
+        log("🟠 Clic sur le triangle orange pour charger le lecteur...")
+        try:
+            selectors_orange = [
+                ".play-btn", ".player-overlay", ".vjs-big-play-button",
+                "button[class*='play']", ".film-player .play",
+                "a[class*='play']", "#player .play",
+            ]
+            clique = False
+            for sel in selectors_orange:
+                try:
+                    btn = page.locator(sel).first
+                    if btn.is_visible(timeout=2000):
+                        btn.click(force=True)
+                        log(f"✅ Triangle orange cliqué via '{sel}'")
+                        clique = True
+                        break
+                except:
+                    continue
+            
+            if not clique:
+                log("⚠️ Sélecteur orange non trouvé, clic au centre de la page...")
+                page.mouse.click(512, 300)
+        except Exception as e:
+            log(f"⚠️ Erreur clic orange : {e}")
+        
+        time.sleep(3)
+
+        # 2. Extraction et Sauvegarde
         src = None
         
-        # Domaines à EXCLURE (trailers, pub, etc.)
         domaines_exclus = [
             "youtube.com", "youtu.be", "vimeo.com",
             "doubleclick.net", "google.com", "googletagmanager.com",
@@ -92,52 +112,42 @@ def extraire_et_sauvegarder(url, film_id):
                     return False
             return True
         
-        # Tentative 1 : sélecteur classique iframe#video-iframe
-        try:
-            candidate = page.locator("iframe#video-iframe").get_attribute("src", timeout=5000)
-            if est_valide(candidate):
-                src = candidate
-                log(f"✅ Iframe trouvée via #video-iframe : {src[:80]}...")
-        except:
-            pass
-        
-        # Tentative 2 : toutes les iframes de la page (hors YouTube/pub)
-        if not src:
-            log("🔍 Recherche d'une iframe de streaming sur la page...")
+        log("🔍 Recherche d'une iframe de streaming sur la page...")
+        # Tentative : extraction du src de l'iframe
+        for _ in range(15):
             try:
+                # 1. Chercher id='seriePlayer' ou 'video-iframe'
+                src_candidate = page.evaluate('''
+                    () => {
+                        let iframe = document.getElementById('seriePlayer') || document.getElementById('video-iframe');
+                        if (iframe && iframe.src) return iframe.src;
+                        return null;
+                    }
+                ''')
+                if est_valide(src_candidate):
+                    src = src_candidate
+                    log(f"✅ Iframe trouvée par ID : {src[:80]}...")
+                    break
+                
+                # 2. Sinon, chercher toutes les iframes
                 iframes = page.locator("iframe").all()
                 for iframe in iframes:
                     candidate = iframe.get_attribute("src")
                     if est_valide(candidate):
                         src = candidate
-                        log(f"✅ Iframe trouvée : {src[:80]}...")
                         break
-                    elif candidate:
-                        log(f"⏭️ Ignorée (domaine exclu) : {candidate[:60]}...")
-            except Exception as e:
-                log(f"❌ Erreur lors de la recherche des iframes : {e}")
-        
-        # Tentative 3 : attendre 5s de plus et réessayer
-        if not src:
-            log("⏳ Attente supplémentaire de 5s et nouvelle tentative...")
-            time.sleep(5)
-            try:
-                iframes = page.locator("iframe").all()
-                for iframe in iframes:
-                    candidate = iframe.get_attribute("src")
-                    if est_valide(candidate):
-                        src = candidate
-                        log(f"✅ Iframe trouvée après attente : {src[:80]}...")
-                        break
-            except Exception as e:
-                log(f"❌ Erreur : {e}")
-        
+                if src:
+                    log(f"✅ Iframe trouvée : {src[:80]}...")
+                    break
+            except:
+                pass
+            time.sleep(1)
+            
         if src:
             save_iframe_url(film_id, src)
         else:
             log("❌ Aucune iframe de streaming trouvée sur cette page.")
 
-        # 4. Fermeture
         log("👋 Fermeture de la page.")
         browser.close()
 
