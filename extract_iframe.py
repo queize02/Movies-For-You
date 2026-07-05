@@ -75,25 +75,45 @@ def extraire_et_sauvegarder(url, film_id):
         # 3. Extraction et Sauvegarde — logique flexible
         src = None
         
+        # Domaines à EXCLURE (trailers, pub, etc.)
+        domaines_exclus = [
+            "youtube.com", "youtu.be", "vimeo.com",
+            "doubleclick.net", "google.com", "googletagmanager.com",
+            "facebook.com", "twitter.com", "instagram.com",
+        ]
+        
+        def est_valide(url):
+            if not url or not url.startswith("http"):
+                return False
+            if "about:blank" in url:
+                return False
+            for domaine in domaines_exclus:
+                if domaine in url:
+                    return False
+            return True
+        
         # Tentative 1 : sélecteur classique iframe#video-iframe
         try:
-            src = page.locator("iframe#video-iframe").get_attribute("src", timeout=5000)
-            if src:
+            candidate = page.locator("iframe#video-iframe").get_attribute("src", timeout=5000)
+            if est_valide(candidate):
+                src = candidate
                 log(f"✅ Iframe trouvée via #video-iframe : {src[:80]}...")
         except:
             pass
         
-        # Tentative 2 : toutes les iframes de la page
+        # Tentative 2 : toutes les iframes de la page (hors YouTube/pub)
         if not src:
-            log("🔍 Recherche de n'importe quelle iframe sur la page...")
+            log("🔍 Recherche d'une iframe de streaming sur la page...")
             try:
                 iframes = page.locator("iframe").all()
                 for iframe in iframes:
                     candidate = iframe.get_attribute("src")
-                    if candidate and candidate.startswith("http") and "about:blank" not in candidate:
+                    if est_valide(candidate):
                         src = candidate
                         log(f"✅ Iframe trouvée : {src[:80]}...")
                         break
+                    elif candidate:
+                        log(f"⏭️ Ignorée (domaine exclu) : {candidate[:60]}...")
             except Exception as e:
                 log(f"❌ Erreur lors de la recherche des iframes : {e}")
         
@@ -105,7 +125,7 @@ def extraire_et_sauvegarder(url, film_id):
                 iframes = page.locator("iframe").all()
                 for iframe in iframes:
                     candidate = iframe.get_attribute("src")
-                    if candidate and candidate.startswith("http") and "about:blank" not in candidate:
+                    if est_valide(candidate):
                         src = candidate
                         log(f"✅ Iframe trouvée après attente : {src[:80]}...")
                         break
@@ -115,7 +135,7 @@ def extraire_et_sauvegarder(url, film_id):
         if src:
             save_iframe_url(film_id, src)
         else:
-            log("❌ Aucune iframe valide trouvée sur cette page.")
+            log("❌ Aucune iframe de streaming trouvée sur cette page.")
 
         # 4. Fermeture
         log("👋 Fermeture de la page.")
