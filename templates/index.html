@@ -12,20 +12,27 @@
 </head>
 <body>
     <div class="navbar">
-        <nav>
-            <ul>
-                <li><a href="/">Accueil</a></li>
-                <li><a href="/?filter=tv">Séries</a></li>
-                <li><a href="/?filter=movie">Films</a></li>
-                {% if session['user'].lower() in ['wqueize_', 'tenoste'] %}
-                <li><a href="{{ url_for('admin_dashboard') }}" class="btn-admin">Admin Dashboard</a></li>
-                {% endif %}
-                <li><a href="{{ url_for('admin_ajouter') }}" class="btn-proposer">Proposer un film</a></li>
-                <li class="logout-container">
-                    <a href="/logout" class="logout-link">Se déconnecter ({{ session['user'] }})</a>
-                </li>
-            </ul>
-        </nav>
+        <div class="nav-header">
+            <button class="nav-toggle" aria-label="Menu" type="button">
+                <span></span>
+                <span></span>
+                <span></span>
+            </button>
+            <nav>
+                <ul>
+                    <li><a href="/">Accueil</a></li>
+                    <li><a href="/?filter=tv">Séries</a></li>
+                    <li><a href="/?filter=movie">Films</a></li>
+                    {% if session['user'].lower() in ['wqueize_', 'tenoste'] %}
+                    <li><a href="{{ url_for('admin_dashboard') }}" class="btn-admin">Admin Dashboard</a></li>
+                    {% endif %}
+                    <li><a href="{{ url_for('admin_ajouter') }}" class="btn-proposer">Proposer un film</a></li>
+                    <li class="logout-container">
+                        <a href="/logout" class="logout-link">Se déconnecter ({{ session['user'] }})</a>
+                    </li>
+                </ul>
+            </nav>
+        </div>
     </div>
 
     <div id="loader">
@@ -80,6 +87,7 @@ fetch('https://api.moviesforyou.fr/api/films')
       console.log(data);
       afficherFilms(data); 
   });
+
         window.addEventListener('load', function() {
             const loader = document.getElementById('loader');
             setTimeout(() => {
@@ -88,6 +96,21 @@ fetch('https://api.moviesforyou.fr/api/films')
                     loader.style.display = 'none';
                 }, 700);
             }, 1500);
+        });
+
+        document.addEventListener('DOMContentLoaded', function() {
+            const navToggle = document.querySelector('.nav-toggle');
+            const navbar = document.querySelector('.navbar');
+            if (navToggle && navbar) {
+                navToggle.addEventListener('click', function() {
+                    navbar.classList.toggle('nav-open');
+                });
+                document.querySelectorAll('.navbar nav a').forEach(link => {
+                    link.addEventListener('click', function() {
+                        navbar.classList.remove('nav-open');
+                    });
+                });
+            }
         });
     </script>
 
