@@ -103,7 +103,7 @@ def extraire_et_sauvegarder(url, film_id):
                 if not clique:
                     # Tentative 2 : Clic au centre du conteneur du lecteur
                     player_selector = None
-                    for sel in ["#player", ".film-player", "#video-player", ".player-container", ".video-js"]:
+                    for sel in ["#player-container", "#main-player", "#player", ".film-player", "#video-player", ".player-container", ".video-js"]:
                         try:
                             el = page.locator(sel).first
                             if el.is_visible(timeout=500):
