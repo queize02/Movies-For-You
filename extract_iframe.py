@@ -50,14 +50,18 @@ def extraire_et_sauvegarder(url, film_id):
                 headless=True,
                 args=[
                     f'--load-extension={extension_path}',
-                    f'--disable-extensions-except={extension_path}'
+                    f'--disable-extensions-except={extension_path}',
+                    '--autoplay-policy=no-user-gesture-required'
                 ],
                 viewport={'width': 1280, 'height': 720}
             )
             page = browser.pages[0]
         else:
             log(f"⚠️ Pas d'extension uBlock trouvée.")
-            browser = p.chromium.launch(headless=True)
+            browser = p.chromium.launch(
+                headless=True,
+                args=['--autoplay-policy=no-user-gesture-required']
+            )
             context = browser.new_context(
                 user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
                 viewport={'width': 1280, 'height': 720}
