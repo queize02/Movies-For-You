@@ -9,6 +9,7 @@
 </head>
 <body>
             <a id="home-link" href="{{ url_for('index') }}"><i class="fa-solid fa-house"></i> Retour à l'accueil</a>
+            <a href="{{ url_for('admin_extract') }}" style="color: #e50914; text-decoration: none; margin-left: 20px; font-weight: bold;"><i class="fa-solid fa-robot"></i> Extracteur Séries</a>
     <h1>Films en attente</h1>
     <form method="POST" class="search-form">
         <input type="text" name="search_titre" placeholder="Rechercher un film à ajouter..." required>

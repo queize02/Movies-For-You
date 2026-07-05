@@ -4,6 +4,13 @@ import psycopg2
 import sys
 import os
 
+import datetime
+extraction_logs = []
+
+def log(msg):
+    print(msg)
+    extraction_logs.append(f"[{datetime.datetime.now().strftime('%H:%M:%S')}] {msg}")
+
 # Configuration BDD
 DB_URL = 'postgresql://admin:02082008@192.168.1.13:5432/neondb'
 
@@ -21,9 +28,9 @@ def save_to_db(series_id, saison, episode, lien):
         conn.commit()
         cur.close()
         conn.close()
-        print(f"  💾 Sauvegardé en BDD : S{saison}E{episode}")
+        log(f"  💾 Sauvegardé en BDD : S{saison}E{episode}")
     except Exception as e:
-        print(f"  ❌ Erreur BDD : {e}")
+        log(f"  ❌ Erreur BDD : {e}")
 
 def fermer_popups(page, context):
     """Ferme les onglets pub ouverts et les modales."""
@@ -50,7 +57,7 @@ def cliquer_episode_vf(page, context, episode_num):
     Clique sur l'épisode VF en utilisant les vrais sélecteurs de French Stream.
     La liste VF est dans #vf-episodes, les épisodes sont ajoutés dynamiquement par JS.
     """
-    print(f"  📺 Sélection de l'épisode {episode_num} (VF)...")
+    log(f"  📺 Sélection de l'épisode {episode_num} (VF)...")
     
     fermer_popups(page, context)
     time.sleep(0.5)
@@ -93,14 +100,14 @@ def cliquer_episode_vf(page, context, episode_num):
         """)
         
         if clicked and clicked.startswith('CLICKED'):
-            print(f"  ✅ {clicked}")
+            log(f"  ✅ {clicked}")
             time.sleep(1)
             fermer_popups(page, context)
             return True
         elif clicked == 'NO_VF_SECTION':
-            print(f"  ⚠️ Section #vf-episodes non trouvée dans le DOM.")
+            log(f"  ⚠️ Section #vf-episodes non trouvée dans le DOM.")
         else:
-            print(f"  ⚠️ Épisode {episode_num} non trouvé dans la section VF.")
+            log(f"  ⚠️ Épisode {episode_num} non trouvé dans la section VF.")
             # Debug : lister ce qu'il y a dans #vf-episodes
             debug = page.evaluate("""
                 () => {
@@ -109,10 +116,10 @@ def cliquer_episode_vf(page, context, episode_num):
                     return 'Contenu VF: ' + vf.innerHTML.substring(0, 300);
                 }
             """)
-            print(f"  🔍 DEBUG : {debug}")
+            log(f"  🔍 DEBUG : {debug}")
             
     except Exception as e:
-        print(f"  ❌ Erreur JS épisode : {e}")
+        log(f"  ❌ Erreur JS épisode : {e}")
     
     return False
 
@@ -120,7 +127,7 @@ def extraire_iframe(page):
     """
     Extrait le src de l'iframe #seriePlayer (le vrai ID sur French Stream).
     """
-    print("  🔍 Extraction de l'iframe #seriePlayer...")
+    log("  🔍 Extraction de l'iframe #seriePlayer...")
     
     # Attendre que l'iframe soit chargée avec un src non vide
     for _ in range(15):
@@ -135,7 +142,7 @@ def extraire_iframe(page):
                 }
             """)
             if src:
-                print(f"  ✅ Iframe trouvée : {src[:80]}...")
+                log(f"  ✅ Iframe trouvée : {src[:80]}...")
                 return src
         except: pass
         time.sleep(1)
@@ -145,18 +152,18 @@ def extraire_iframe(page):
         iframe = page.locator("iframe").first
         src = iframe.get_attribute("src")
         if src and src != "" and src != "about:blank":
-            print(f"  ✅ Iframe fallback : {src[:80]}...")
+            log(f"  ✅ Iframe fallback : {src[:80]}...")
             return src
     except: pass
     
-    print("  ❌ Aucune iframe avec un lien trouvée.")
+    log("  ❌ Aucune iframe avec un lien trouvée.")
     return None
 
 def extract_episode(page, context, episode_num):
     """Extrait l'iframe pour un épisode donné."""
-    print(f"\n{'='*50}")
-    print(f"🚀 Épisode {episode_num}")
-    print(f"{'='*50}")
+    log(f"\n{'='*50}")
+    log(f"🚀 Épisode {episode_num}")
+    log(f"{'='*50}")
     
     try:
         # 1. Sortir du plein écran si actif
@@ -171,7 +178,7 @@ def extract_episode(page, context, episode_num):
         
         # 4. Cliquer sur l'épisode VF
         if not cliquer_episode_vf(page, context, episode_num):
-            print(f"  ⚠️ Impossible de cliquer sur l'épisode {episode_num}. On tente quand même d'extraire l'iframe.")
+            log(f"  ⚠️ Impossible de cliquer sur l'épisode {episode_num}. On tente quand même d'extraire l'iframe.")
         
         time.sleep(3)
         
@@ -185,30 +192,22 @@ def extract_episode(page, context, episode_num):
         quitter_plein_ecran(page)
         
         if src:
-            print(f"  🔗 Lien final : {src}")
+            log(f"  🔗 Lien final : {src}")
         else:
-            print(f"  ❌ Pas de lien trouvé pour l'épisode {episode_num}")
+            log(f"  ❌ Pas de lien trouvé pour l'épisode {episode_num}")
         
         return src
         
     except Exception as e:
-        print(f"  ❌ Erreur : {e}")
+        log(f"  ❌ Erreur : {e}")
         quitter_plein_ecran(page)
         return None
 
-if __name__ == "__main__":
-    print("="*60)
-    print("🤖 EXTRACTEUR DE SÉRIES — FRENCH STREAM (fs15.lol)")
-    print("="*60)
-    
-    url = input("👉 URL de la série (ex: https://fs15.lol/123-titre-saison-1.html) : ").strip()
-    if not url:
-        print("Annulé.")
-        sys.exit()
-    
-    saison   = int(input("👉 Numéro de saison : ").strip())
-    nb_eps   = int(input("👉 Nombre d'épisodes à extraire : ").strip())
-    series_id  = int(input("👉 ID de la série en base de données : ").strip())
+def lancer_extraction(url, saison, nb_eps, series_id):
+    extraction_logs.clear()
+    log("="*60)
+    log("🤖 EXTRACTEUR DE SÉRIES — FRENCH STREAM (fs15.lol)")
+    log("="*60)
     
     # Vérifier si l'extension uBlock existe
     extension_path = os.path.abspath("ublock_extension")
@@ -216,10 +215,10 @@ if __name__ == "__main__":
     
     with sync_playwright() as p:
         if use_extension:
-            print(f"\n🛡️ uBlock Origin détecté, chargement de l'extension...")
+            log(f"\n🛡️ uBlock Origin détecté, chargement de l'extension...")
             browser = p.chromium.launch_persistent_context(
                 user_data_dir="./user_data",
-                headless=False,
+                headless=True,
                 args=[
                     f'--load-extension={extension_path}',
                     f'--disable-extensions-except={extension_path}'
@@ -228,8 +227,8 @@ if __name__ == "__main__":
             )
             page = browser.pages[0]
         else:
-            print(f"\n⚠️ Pas d'extension uBlock trouvée, lancement sans bloqueur de pub.")
-            browser = p.chromium.launch(headless=False)
+            log(f"\n⚠️ Pas d'extension uBlock trouvée, lancement sans bloqueur de pub.")
+            browser = p.chromium.launch(headless=True)
             context = browser.new_context(
                 user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
                 viewport={'width': 1280, 'height': 720}
@@ -240,24 +239,24 @@ if __name__ == "__main__":
         ctx = browser if use_extension else context
         ctx.on("page", lambda new_page: new_page.close())
         
-        print(f"\n🌐 Chargement de la page...")
+        log(f"\n🌐 Chargement de la page...")
         page.goto(url, wait_until="domcontentloaded", timeout=60000)
         
         # Attendre que le script du site charge les épisodes
-        print("⏳ Attente du chargement des épisodes...")
+        log("⏳ Attente du chargement des épisodes...")
         time.sleep(5)
         
         # Debug : vérifier que les épisodes sont bien chargés
-        nb_found = page.evaluate("""
+        nb_found = page.evaluate('''
             () => {
                 const vf = document.getElementById('vf-episodes');
                 return vf ? vf.children.length : -1;
             }
-        """)
-        print(f"📋 Épisodes VF détectés dans le DOM : {nb_found}")
+        ''')
+        log(f"📋 Épisodes VF détectés dans le DOM : {nb_found}")
         
         if nb_found <= 0:
-            print("⚠️ Les épisodes ne sont pas encore chargés. Attente supplémentaire de 5s...")
+            log("⚠️ Les épisodes ne sont pas encore chargés. Attente supplémentaire de 5s...")
             time.sleep(5)
         
         for ep in range(1, nb_eps + 1):
@@ -266,4 +265,11 @@ if __name__ == "__main__":
             time.sleep(2)
         
         browser.close()
-        print("\n✨ Extraction terminée !")
+        log("\n✨ Extraction terminée !")
+
+if __name__ == "__main__":
+    url = input("👉 URL de la série : ").strip()
+    saison = int(input("👉 Numéro de saison : ").strip())
+    nb_eps = int(input("👉 Nombre d'épisodes : ").strip())
+    series_id = int(input("👉 ID de la série : ").strip())
+    lancer_extraction(url, saison, nb_eps, series_id)

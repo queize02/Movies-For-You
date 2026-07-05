@@ -395,20 +395,22 @@ def admin_approuver_request(media_type, media_id):
     cur.execute(f"SELECT * FROM {table} WHERE id = %s", (media_id,))
     film = cur.fetchone()
     
-    # Sécurité : si le média n'existe pas en BDD
     if not film:
         cur.close(); conn.close()
         flash("Média introuvable.")
         return redirect(url_for('index'))
     
+    # Bloc de traitement du formulaire (POST)
     if request.method == 'POST':
-        # ... (votre logique SQL actuelle de UPDATE reste ici) ...
-        # Exemple: 
-        # cur.execute(f"UPDATE {table} SET status = 'approved' WHERE id = %s", (media_id,))
+        lien_final = request.form.get('lien_final', '').strip()
+
+        if media_type == 'tv':
+            cur.execute(f"UPDATE {table} SET status = 'approved' WHERE id = %s", (media_id,))
+        else:
+            cur.execute(f"UPDATE {table} SET status = 'approved', lien = %s WHERE id = %s", (lien_final, media_id))
         conn.commit()
-        
-        # APPEL VERS LE BOT DANS DOCKER
-        # On utilise le nom de service 'bot_discord' défini dans votre docker-compose.yml
+
+        # Notification Discord
         try:
             payload = {
                 "titre": film.get('titre', 'Inconnu'),
@@ -417,12 +419,13 @@ def admin_approuver_request(media_type, media_id):
             }
             requests.post("http://bot_discord:10000/admin_manuel", json=payload, timeout=3)
         except Exception as e:
-            # On logue l'erreur mais on ne bloque pas l'utilisateur si le bot est injoignable
-            print(f"DEBUG: Notification Discord échouée (bot peut-être hors-ligne) : {e}")
-            
+            print(f"DEBUG: Notification Discord échouée : {e}")
+
         cur.close(); conn.close()
+        flash(f"✅ {film.get('titre')} a été ajouté au catalogue.")
         return redirect(url_for('index'))
-        
+
+    # Si c'est un GET, on ferme proprement et on affiche le formulaire
     cur.close(); conn.close()
     return render_template('approve_form.html', movie_id=media_id, media_type=media_type)
 
@@ -601,6 +604,48 @@ def git_webhook():
         return jsonify({"status": "error", "message": str(e)}), 500
 
 
+from extract_fs import lancer_extraction, extraction_logs
+is_extracting = False
+
+@app.route('/admin/extract', methods=['GET', 'POST'])
+def admin_extract():
+    if not is_admin():
+        return "Accès refusé", 403
+    
+    global is_extracting
+    if request.method == 'POST':
+        url = request.form.get('url')
+        saison = request.form.get('saison')
+        nb_eps = request.form.get('nb_eps')
+        series_id = request.form.get('series_id')
+        
+        if not is_extracting and url and saison and nb_eps and series_id:
+            is_extracting = True
+            
+            def thread_target():
+                global is_extracting
+                try:
+                    lancer_extraction(url, int(saison), int(nb_eps), int(series_id))
+                except Exception as e:
+                    extraction_logs.append(f"Erreur fatale: {e}")
+                finally:
+                    is_extracting = False
+                    
+            threading.Thread(target=thread_target).start()
+            
+        return render_template('extract.html', is_extracting=True)
+
+    return render_template('extract.html', is_extracting=is_extracting)
+
+@app.route('/api/extract/status')
+def api_extract_status():
+    if not is_admin():
+        return jsonify({"error": "Accès refusé"}), 403
+    return jsonify({
+        "is_extracting": is_extracting,
+        "logs": extraction_logs
+    })
+
 @app.route('/admin_supprimer/<string:media_type>/<int:media_id>', methods=['POST'])
 def admin_supprimer(media_type, media_id):
     if not is_admin():
@@ -617,6 +662,35 @@ def admin_supprimer(media_type, media_id):
     flash(f"✅ Média supprimé avec succès.")
     return redirect(url_for('admin_dashboard'))
 
+
+
+# Dans app_6.py
+@app.route('/api/lancer-extraction', methods=['POST'])
+def lancer_extraction():
+    data = request.json
+    # --- AJOUTE CES LIGNES ---
+    url = data.get('url')
+    saison = data.get('saison')
+    nb_eps = data.get('nb_eps')
+    series_id = data.get('series_id')
+    # -------------------------
+    
+    try:
+        process = subprocess.Popen(
+            ["python", "extract_fs.py", "--url", url, "--saison", str(saison), "--nb", str(nb_eps), "--id", str(series_id)],
+            stdout=subprocess.PIPE, 
+            stderr=subprocess.PIPE,
+            text=True
+        )
+        return jsonify({"status": "success", "message": "Extraction lancée !"}), 200
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+@app.route('/extraction')
+def page_extraction():
+    if not is_admin():
+        return "Accès refusé", 403
+    return render_template('extraction.html')
 
 if __name__ == '__main__':
     with app.app_context():
