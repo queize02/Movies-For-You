@@ -664,33 +664,7 @@ def admin_supprimer(media_type, media_id):
 
 
 
-# Dans app_6.py
-@app.route('/api/lancer-extraction', methods=['POST'])
-def lancer_extraction():
-    data = request.json
-    # --- AJOUTE CES LIGNES ---
-    url = data.get('url')
-    saison = data.get('saison')
-    nb_eps = data.get('nb_eps')
-    series_id = data.get('series_id')
-    # -------------------------
-    
-    try:
-        process = subprocess.Popen(
-            ["python", "extract_fs.py", "--url", url, "--saison", str(saison), "--nb", str(nb_eps), "--id", str(series_id)],
-            stdout=subprocess.PIPE, 
-            stderr=subprocess.PIPE,
-            text=True
-        )
-        return jsonify({"status": "success", "message": "Extraction lancée !"}), 200
-    except Exception as e:
-        return jsonify({"status": "error", "message": str(e)}), 500
 
-@app.route('/extraction')
-def page_extraction():
-    if not is_admin():
-        return "Accès refusé", 403
-    return render_template('extraction.html')
 
 if __name__ == '__main__':
     with app.app_context():
