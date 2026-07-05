@@ -3,6 +3,13 @@ import time
 import os
 import psycopg2
 
+import datetime
+from extract_fs import extraction_logs
+
+def log(msg):
+    print(msg)
+    extraction_logs.append(f"[{datetime.datetime.now().strftime('%H:%M:%S')}] {msg}")
+
 # Configuration BDD (à ajuster si besoin)
 DB_URL = 'postgresql://admin:02082008@192.168.1.13:5432/neondb'
 
@@ -15,11 +22,15 @@ def save_iframe_url(film_id, iframe_src):
         conn.commit()
         cur.close()
         conn.close()
-        print(f"✅ Succès : Iframe {iframe_src} enregistrée en BDD pour l'ID {film_id}.")
+        log(f"✅ Succès : Iframe {iframe_src} enregistrée en BDD pour l'ID {film_id}.")
     except Exception as e:
-        print(f"❌ Erreur BDD : {e}")
+        log(f"❌ Erreur BDD : {e}")
 
 def extraire_et_sauvegarder(url, film_id):
+    extraction_logs.clear()
+    log('='*60)
+    log('🤖 EXTRACTEUR DE FILMS')
+    log('='*60)
     extension_path = os.path.abspath("ublock_extension") # Ton dossier d'extension
 
     with sync_playwright() as p:
@@ -27,7 +38,7 @@ def extraire_et_sauvegarder(url, film_id):
         
         browser = p.chromium.launch_persistent_context(
             user_data_dir="./user_data",
-            headless=False,
+            headless=True,
             args=args,
             viewport={'width': 1280, 'height': 720}
         )
@@ -45,7 +56,7 @@ def extraire_et_sauvegarder(url, film_id):
         time.sleep(3)
         
         # --- MODIFICATION ICI ---
-        print("👉 Tentative de clic sur triangle ROUGE (si présent)...")
+        log("👉 Tentative de clic sur triangle ROUGE (si présent)...")
         try:
             frame = page.frame_locator("iframe#video-iframe")
             bouton_rouge = frame.locator(".vjs-big-play-button, .play-button").first
@@ -53,11 +64,11 @@ def extraire_et_sauvegarder(url, film_id):
             # On vérifie la visibilité avant de cliquer
             if bouton_rouge.is_visible():
                 bouton_rouge.click(force=True)
-                print("✅ Clic sur triangle rouge effectué.")
+                log("✅ Clic sur triangle rouge effectué.")
             else:
-                print("ℹ️ Le triangle rouge est déjà masqué (le film est peut-être déjà lancé).")
+                log("ℹ️ Le triangle rouge est déjà masqué (le film est peut-être déjà lancé).")
         except Exception:
-            print("ℹ️ Bouton rouge indisponible, passage à l'extraction.")
+            log("ℹ️ Bouton rouge indisponible, passage à l'extraction.")
         # ------------------------
 
         time.sleep(2)
@@ -66,10 +77,10 @@ def extraire_et_sauvegarder(url, film_id):
         if src:
             save_iframe_url(film_id, src)
         else:
-            print("⚠️ Impossible d'extraire le src.")
+            log("⚠️ Impossible d'extraire le src.")
 
         # 4. Fermeture
-        print("👋 Fermeture de la page.")
+        log("👋 Fermeture de la page.")
         browser.close()
 
 if __name__ == "__main__":

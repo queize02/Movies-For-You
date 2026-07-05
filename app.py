@@ -395,20 +395,22 @@ def admin_approuver_request(media_type, media_id):
     cur.execute(f"SELECT * FROM {table} WHERE id = %s", (media_id,))
     film = cur.fetchone()
     
-    # Sécurité : si le média n'existe pas en BDD
     if not film:
         cur.close(); conn.close()
         flash("Média introuvable.")
         return redirect(url_for('index'))
     
+    # Bloc de traitement du formulaire (POST)
     if request.method == 'POST':
-        # ... (votre logique SQL actuelle de UPDATE reste ici) ...
-        # Exemple: 
-        # cur.execute(f"UPDATE {table} SET status = 'approved' WHERE id = %s", (media_id,))
+        lien_final = request.form.get('lien_final', '').strip()
+
+        if media_type == 'tv':
+            cur.execute(f"UPDATE {table} SET status = 'approved' WHERE id = %s", (media_id,))
+        else:
+            cur.execute(f"UPDATE {table} SET status = 'approved', lien = %s WHERE id = %s", (lien_final, media_id))
         conn.commit()
-        
-        # APPEL VERS LE BOT DANS DOCKER
-        # On utilise le nom de service 'bot_discord' défini dans votre docker-compose.yml
+
+        # Notification Discord
         try:
             payload = {
                 "titre": film.get('titre', 'Inconnu'),
@@ -417,12 +419,13 @@ def admin_approuver_request(media_type, media_id):
             }
             requests.post("http://bot_discord:10000/admin_manuel", json=payload, timeout=3)
         except Exception as e:
-            # On logue l'erreur mais on ne bloque pas l'utilisateur si le bot est injoignable
-            print(f"DEBUG: Notification Discord échouée (bot peut-être hors-ligne) : {e}")
-            
+            print(f"DEBUG: Notification Discord échouée : {e}")
+
         cur.close(); conn.close()
+        flash(f"✅ {film.get('titre')} a été ajouté au catalogue.")
         return redirect(url_for('index'))
-        
+
+    # Si c'est un GET, on ferme proprement et on affiche le formulaire
     cur.close(); conn.close()
     return render_template('approve_form.html', movie_id=media_id, media_type=media_type)
 
@@ -601,6 +604,55 @@ def git_webhook():
         return jsonify({"status": "error", "message": str(e)}), 500
 
 
+from extract_fs import lancer_extraction, extraction_logs
+from extract_iframe import extraire_et_sauvegarder
+is_extracting = False
+
+@app.route('/admin/extract', methods=['GET', 'POST'])
+def admin_extract():
+    if not is_admin():
+        return "Accès refusé", 403
+    
+    global is_extracting
+    if request.method == 'POST':
+        media_type = request.form.get('media_type')
+        url = request.form.get('url')
+        media_id = request.form.get('media_id')
+        saison = request.form.get('saison')
+        nb_eps = request.form.get('nb_eps')
+        
+        if not is_extracting and url and media_id:
+            is_extracting = True
+            
+            def thread_target():
+                global is_extracting
+                try:
+                    if media_type == 'serie' and saison and nb_eps:
+                        lancer_extraction(url, int(saison), int(nb_eps), int(media_id))
+                    elif media_type == 'film':
+                        extraire_et_sauvegarder(url, int(media_id))
+                    else:
+                        extraction_logs.append("Erreur: Données manquantes.")
+                except Exception as e:
+                    extraction_logs.append(f"Erreur fatale: {e}")
+                finally:
+                    is_extracting = False
+                    
+            threading.Thread(target=thread_target).start()
+            
+        return render_template('extract.html', is_extracting=True)
+
+    return render_template('extract.html', is_extracting=is_extracting)
+
+@app.route('/api/extract/status')
+def api_extract_status():
+    if not is_admin():
+        return jsonify({"error": "Accès refusé"}), 403
+    return jsonify({
+        "is_extracting": is_extracting,
+        "logs": extraction_logs
+    })
+
 @app.route('/admin_supprimer/<string:media_type>/<int:media_id>', methods=['POST'])
 def admin_supprimer(media_type, media_id):
     if not is_admin():
@@ -616,6 +668,9 @@ def admin_supprimer(media_type, media_id):
     
     flash(f"✅ Média supprimé avec succès.")
     return redirect(url_for('admin_dashboard'))
+
+
+
 
 
 if __name__ == '__main__':
