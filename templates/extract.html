@@ -25,6 +25,11 @@
             <p style="color: orange; font-weight: bold; font-size: 1.1rem;">⏳ Une extraction est en cours en arrière-plan...</p>
             <div class="terminal" id="terminal">Chargement des logs...</div>
             
+            <h3 style="margin-top: 30px; color: white; font-size: 1.1rem;">📸 Vue en direct du navigateur :</h3>
+            <div style="background: #000; border: 2px dashed #444; border-radius: 6px; overflow: hidden; margin-top: 10px; text-align: center; padding: 5px;">
+                <img id="screenshot_img" src="{{ url_for('static', filename='extraction_screenshot.png') }}" alt="Chargement de l'aperçu..." style="max-width: 100%; height: auto; display: block; margin: 0 auto; min-height: 180px; object-fit: contain; background: #222;">
+            </div>
+            
             <script>
                 function updateLogs() {
                     fetch('/api/extract/status')
@@ -33,12 +38,19 @@
                             const term = document.getElementById('terminal');
                             term.innerHTML = data.logs.join('<br>') + (data.is_extracting ? '<br><span style="animation: blink 1s infinite;">_</span>' : '<br><br><b style="color:white;">✅ Processus terminé.</b>');
                             term.scrollTop = term.scrollHeight;
+                            
+                            // Mettre à jour l'image en direct avec un paramètre pour contourner le cache
+                            const img = document.getElementById('screenshot_img');
+                            if (img) {
+                                img.src = "/static/extraction_screenshot.png?t=" + new Date().getTime();
+                            }
+                            
                             if (data.is_extracting) {
-                                setTimeout(updateLogs, 1000);
+                                setTimeout(updateLogs, 1500);
                             }
                         })
                         .catch(err => {
-                            setTimeout(updateLogs, 2000);
+                            setTimeout(updateLogs, 2500);
                         });
                 }
                 updateLogs();

@@ -10,6 +10,13 @@ def log(msg):
     print(msg)
     extraction_logs.append(f"[{datetime.datetime.now().strftime('%H:%M:%S')}] {msg}")
 
+def prendre_screenshot(page):
+    try:
+        os.makedirs("static", exist_ok=True)
+        page.screenshot(path="static/extraction_screenshot.png")
+    except Exception as e:
+        pass
+
 # Configuration BDD (à ajuster si besoin)
 DB_URL = 'postgresql://admin:02082008@192.168.1.13:5432/neondb'
 
@@ -64,6 +71,7 @@ def extraire_et_sauvegarder(url, film_id):
         log(f"🌐 Chargement de la page...")
         page.goto(url, wait_until="domcontentloaded", timeout=60000)
         time.sleep(3)
+        prendre_screenshot(page)
 
         # 1. Cliquer sur le triangle ORANGE (le couvre-feu de la vidéo)
         log("🟠 Clic sur le triangle orange pour charger le lecteur...")
@@ -92,6 +100,7 @@ def extraire_et_sauvegarder(url, film_id):
             log(f"⚠️ Erreur clic orange : {e}")
         
         time.sleep(3)
+        prendre_screenshot(page)
 
         # 2. Extraction et Sauvegarde (recherche récursive des iframes imbriquées)
         src = None
@@ -133,6 +142,7 @@ def extraire_et_sauvegarder(url, film_id):
         else:
             log("❌ Aucun lecteur de streaming valide (vidzy, uqload, voe...) trouvé sur la page.")
 
+        prendre_screenshot(page)
         log("👋 Fermeture de la page.")
         browser.close()
 

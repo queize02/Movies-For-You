@@ -11,6 +11,13 @@ def log(msg):
     print(msg)
     extraction_logs.append(f"[{datetime.datetime.now().strftime('%H:%M:%S')}] {msg}")
 
+def prendre_screenshot(page):
+    try:
+        os.makedirs("static", exist_ok=True)
+        page.screenshot(path="static/extraction_screenshot.png")
+    except Exception as e:
+        pass
+
 # Configuration BDD
 DB_URL = 'postgresql://admin:02082008@192.168.1.13:5432/neondb'
 
@@ -241,6 +248,7 @@ def lancer_extraction(url, saison, nb_eps, series_id):
         
         log(f"\n🌐 Chargement de la page...")
         page.goto(url, wait_until="domcontentloaded", timeout=60000)
+        prendre_screenshot(page)
         
         # Attendre que le script du site charge les épisodes
         log("⏳ Attente du chargement des épisodes...")
@@ -262,8 +270,10 @@ def lancer_extraction(url, saison, nb_eps, series_id):
         for ep in range(1, nb_eps + 1):
             iframe_src = extract_episode(page, ctx, ep)
             save_to_db(series_id, saison, ep, iframe_src)
+            prendre_screenshot(page)
             time.sleep(2)
         
+        prendre_screenshot(page)
         browser.close()
         log("\n✨ Extraction terminée !")
 
