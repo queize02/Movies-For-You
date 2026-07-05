@@ -72,12 +72,50 @@ def extraire_et_sauvegarder(url, film_id):
         # ------------------------
 
         time.sleep(2)
-        # 3. Extraction et Sauvegarde
-        src = page.locator("iframe#video-iframe").get_attribute("src")
+        # 3. Extraction et Sauvegarde — logique flexible
+        src = None
+        
+        # Tentative 1 : sélecteur classique iframe#video-iframe
+        try:
+            src = page.locator("iframe#video-iframe").get_attribute("src", timeout=5000)
+            if src:
+                log(f"✅ Iframe trouvée via #video-iframe : {src[:80]}...")
+        except:
+            pass
+        
+        # Tentative 2 : toutes les iframes de la page
+        if not src:
+            log("🔍 Recherche de n'importe quelle iframe sur la page...")
+            try:
+                iframes = page.locator("iframe").all()
+                for iframe in iframes:
+                    candidate = iframe.get_attribute("src")
+                    if candidate and candidate.startswith("http") and "about:blank" not in candidate:
+                        src = candidate
+                        log(f"✅ Iframe trouvée : {src[:80]}...")
+                        break
+            except Exception as e:
+                log(f"❌ Erreur lors de la recherche des iframes : {e}")
+        
+        # Tentative 3 : attendre 5s de plus et réessayer
+        if not src:
+            log("⏳ Attente supplémentaire de 5s et nouvelle tentative...")
+            time.sleep(5)
+            try:
+                iframes = page.locator("iframe").all()
+                for iframe in iframes:
+                    candidate = iframe.get_attribute("src")
+                    if candidate and candidate.startswith("http") and "about:blank" not in candidate:
+                        src = candidate
+                        log(f"✅ Iframe trouvée après attente : {src[:80]}...")
+                        break
+            except Exception as e:
+                log(f"❌ Erreur : {e}")
+        
         if src:
             save_iframe_url(film_id, src)
         else:
-            log("⚠️ Impossible d'extraire le src.")
+            log("❌ Aucune iframe valide trouvée sur cette page.")
 
         # 4. Fermeture
         log("👋 Fermeture de la page.")
