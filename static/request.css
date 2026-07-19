@@ -1,3 +1,4 @@
+html { color-scheme: dark; }
 /* On s'assure que la page prend toute la hauteur */
 html, body {
     height: 100%;
