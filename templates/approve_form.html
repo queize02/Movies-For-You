@@ -2,7 +2,10 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="theme-color" content="#141414">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <title>Approuver le film</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='approve_form.css') }}">
 </head>
@@ -10,13 +13,13 @@
     <div class="approve-page">
         <div class="approve-card">
             <h1>Approuver le film</h1>
-            <form action="{{ url_for('admin_supprimer', media_type=film.get('media_type', 'movie'), media_id=film['id']) }}" method="POST" class="approve-form">
+            <form action="{{ url_for('admin_approuver_request', media_type=media_type, media_id=movie_id) }}" method="POST" class="approve-form">
                 <label>Lien Embed (VF) :</label>
                 {% if media_type == 'tv' %}
-                    <p class="approve-info approve-tv">🟢 Il s'agit d'une série. Laissez ce champ vide (les épisodes seront générés automatiquement).</p>
+                    <p class="approve-info approve-tv">🟢 Il s'agit d'une série...</p>
                     <input type="text" name="lien_final" value="">
                 {% else %}
-                    <p class="approve-info approve-movie">🔴 Il s'agit d'un film. Le lien de votre extracteur est obligatoire.</p>
+                    <p class="approve-info approve-movie">🔴 Il s'agit d'un film...</p>
                     <input type="text" name="lien_final" value="" required>
                 {% endif %}
                 <button type="submit" class="approve-submit">Valider et Publier</button>

@@ -2,14 +2,17 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="theme-color" content="#141414">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <title>Films en attente</title>
     <script src="https://kit.fontawesome.com/041b1dc342.js" crossorigin="anonymous"></script>
     <link rel="stylesheet" href="{{ url_for('static', filename='admin_dashboard.css') }}">
 </head>
 <body>
             <a id="home-link" href="{{ url_for('index') }}"><i class="fa-solid fa-house"></i> Retour à l'accueil</a>
-            <a href="{{ url_for('admin_extract') }}" style="color: #e50914; text-decoration: none; margin-left: 20px; font-weight: bold;"><i class="fa-solid fa-robot"></i> Extracteur Séries</a>
+            <a href="{{ url_for('admin_extract') }}" style="color: #e50914; text-decoration: none; margin-left: 20px; font-weight: bold;"><i class="fa-solid fa-robot"></i> Extracteur</a>
     <h1>Films en attente</h1>
     <form method="POST" class="search-form">
         <input type="text" name="search_titre" placeholder="Rechercher un film à ajouter..." required>
