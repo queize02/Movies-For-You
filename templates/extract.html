@@ -2,10 +2,8 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="theme-color" content="#141414">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <title>Extracteur MFY</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='index.css') }}">
     <style>
@@ -32,8 +30,7 @@
             <div style="background: #000; border: 2px dashed #444; border-radius: 6px; overflow: hidden; margin-top: 10px; text-align: center; padding: 5px;">
                 <img id="screenshot_img" src="{{ url_for('static', filename='extraction_screenshot.png') }}" alt="Chargement de l'aperçu..." style="max-width: 100%; height: auto; display: block; margin: 0 auto; min-height: 180px; object-fit: contain; background: #222;">
             </div>
-            
-            <script>
+    <script>
                 function updateLogs() {
                     fetch('/api/extract/status')
                         .then(r => r.json())

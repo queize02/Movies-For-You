@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#141414">
+    <title>Extracteur MFY</title>
+</head>
+<body>
+    <h2>Lancer une extraction</h2>
+    <form id="extractionForm">
+        <input type="text" id="url" placeholder="URL French Stream" required style="width:300px;"><br>
+        <input type="number" id="saison" placeholder="Saison" required><br>
+        <input type="number" id="nb_eps" placeholder="Nombre d'épisodes" required><br>
+        <input type="number" id="series_id" placeholder="ID Série (Base de données)" required><br>
+        <button type="submit">Lancer l'extraction</button>
+    </form>
+    <script>
+        document.getElementById('extractionForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const data = {
+                url: document.getElementById('url').value,
+                saison: document.getElementById('saison').value,
+                nb_eps: document.getElementById('nb_eps').value,
+                series_id: document.getElementById('series_id').value
+            };
+
+            const response = await fetch('/api/lancer-extraction', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+
+            const result = await response.json();
+            alert(result.message);
+        });
+    </script>
+</body>
+</html>

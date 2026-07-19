@@ -2,10 +2,8 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="theme-color" content="#141414">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <script src="https://kit.fontawesome.com/041b1dc342.js" crossorigin="anonymous"></script>
     <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
     <title>{{ film['titre'] }} - MFY</title>
@@ -161,8 +159,7 @@
         </div>
 
         <div id="movie-data" data-tmdb-id="{{ film.tmdb_id }}" data-db-id="{{ film.id }}"></div>
-        
-        <script>
+    <script>
             const TMDB_API_KEY = "{{ TMDB_API_KEY }}";
             let db_episodes = {};
             const movieData = document.getElementById('movie-data');
