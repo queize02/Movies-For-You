@@ -109,6 +109,7 @@ def setup_browser(p, use_extension, extension_path, log):
 
 
 def trigger_video_play(page, log):
+    log("🟠 Tentative de clic sur le bouton Play...")
     try:
         for click_num in range(1, 4):
             clique = False
@@ -122,6 +123,7 @@ def trigger_video_play(page, log):
                     btn = page.locator(sel).first
                     if btn.is_visible(timeout=500):
                         btn.click(force=True)
+                        log(f"   👉 Clic Play via selector '{sel}'")
                         clique = True
                         break
                 except:
@@ -140,14 +142,16 @@ def trigger_video_play(page, log):
                 
                 if player_selector:
                     page.locator(player_selector).first.click(force=True)
+                    log(f"   🎯 Clic au centre du lecteur '{player_selector}'")
                     clique = True
                 
             if not clique:
                 page.mouse.click(640, 360)
+                log("   ⚠️ Clic absolu au centre de l'écran (640, 360)")
             
             time.sleep(1.5)
-    except Exception:
-        pass
+    except Exception as e:
+        log(f"⚠️ Erreur lors du clic Play : {e}")
     time.sleep(3)
 
 
@@ -155,6 +159,7 @@ def search_iframe(page, log, seen_iframes=None):
     if seen_iframes is None:
         seen_iframes = set()
         
+    log("🔍 Recherche d'un nouveau lecteur de streaming dans les frames...")
     src = None
     for attempt in range(15):
         try:
@@ -168,11 +173,13 @@ def search_iframe(page, log, seen_iframes=None):
                     if frame_url not in seen_iframes:
                         src = frame_url
                         seen_iframes.add(frame_url)
+                        log(f"✅ Nouveau Lecteur détecté : {src[:80]}...")
                         return src
         except:
             pass
         time.sleep(1)
     
+    log("❌ Aucun lecteur NOUVEAU n'a été trouvé.")
     return None
 
 
@@ -257,8 +264,8 @@ def extraire_serie(serie_id, url, saison, nb_eps, use_extension, extension_path,
             time.sleep(5)
             prendre_screenshot(page)
 
-            # --- METHODE 1 : API INTERNE DE FRENCH-STREAM ---
-            log("⚡ Recherche automatique des flux de la série...")
+            # --- METHODE 1 (SUPER RAPIDE & ULTRA FIABLE) : API INTERNE DE FRENCH-STREAM ---
+            log("⚡ Analyse des données de flux internes de la page...")
             eps_data = None
             if news_id:
                 try:
@@ -279,10 +286,11 @@ def extraire_serie(serie_id, url, saison, nb_eps, use_extension, extension_path,
                         }
                         return null;
                     }""", news_id)
-                except Exception:
-                    pass
+                except Exception as e:
+                    log(f"   (API direct non disponible : {e})")
 
             if eps_data and isinstance(eps_data, dict) and ("vf" in eps_data or "vostfr" in eps_data):
+                log("🎉 Données officielles des épisodes trouvées directement !")
                 flux_dict = eps_data.get("vf") or eps_data.get("vostfr") or {}
                 
                 # Mise à jour de la liste d'épisodes si le site en contient d'autres
@@ -318,29 +326,34 @@ def extraire_serie(serie_id, url, saison, nb_eps, use_extension, extension_path,
                             (serie_id, saison, ep, best_link)
                         )
                         conn.commit()
-                        log(f"✅ Épisode {ep} : Lecteur enregistré avec succès !")
+                        log(f"✅ Épisode {ep} extrait : {best_link[:65]}...")
                         nb_succes += 1
+                    else:
+                        log(f"⚠️ Aucun lecteur disponible pour l'épisode {ep}")
 
                 cur.close()
                 conn.close()
                 prendre_screenshot(page)
-                log(f"🎉 Extraction terminée avec succès ({nb_succes}/{len(episodes)} épisodes prêts) !")
+                log(f"🏆 Extraction instantanée terminée avec succès ({nb_succes}/{len(episodes)} épisodes enregistrés) !")
                 return
 
-            # --- METHODE 2 : AUTOMATISATION PAR CAPTURE DYNAMIQUE ---
+            # --- METHODE 2 : AUTOMATISATION PAR CLICS AVEC SELECTEURS CORRIGES ---
+            log("ℹ️ Passage en mode capture dynamique par le navigateur...")
             iframes_deja_vues = set()
 
             for ep in episodes:
-                log(f"🎬 Analyse de l'épisode {ep}...")
+                log(f"🎬 Traitement de l'épisode {ep}...")
                 try:
                     # Clic précis sur l'épisode ciblé dans le DOM
-                    page.evaluate("""(targetEp) => {
+                    episode_clicked = page.evaluate("""(targetEp) => {
+                        // 1. Bouton direct via data-num
                         const row = document.querySelector(`.episode-row[data-num='${targetEp}'] .ep-title, [data-num='${targetEp}'].ep-title, [data-num='${targetEp}']`);
                         if (row) {
                             row.scrollIntoView({block: 'center', behavior: 'instant'});
                             row.click();
                             return true;
                         }
+                        // 2. Recherche sur feuilles DOM
                         const candidates = Array.from(document.querySelectorAll('a, button, li, div.ep-title, span'));
                         for (const el of candidates) {
                             if (el.children.length <= 1) {
@@ -355,6 +368,12 @@ def extraire_serie(serie_id, url, saison, nb_eps, use_extension, extension_path,
                         }
                         return false;
                     }""", ep)
+
+                    if episode_clicked:
+                        log(f"   🔘 Bouton Épisode {ep} cliqué.")
+                    else:
+                        log(f"   ⚠️ Bouton Épisode {ep} non cliqué spécifiquement, clic au centre.")
+                        page.mouse.click(640, 360)
 
                     time.sleep(4)
                     prendre_screenshot(page)
@@ -374,14 +393,16 @@ def extraire_serie(serie_id, url, saison, nb_eps, use_extension, extension_path,
                         conn.commit()
                         cur.close()
                         conn.close()
-                        log(f"✅ Épisode {ep} : Lecteur enregistré avec succès !")
+                        log(f"✅ Épisode {ep} sauvegardé en BDD : {flux[:60]}...")
+                    else:
+                        log(f"⚠️ Aucun flux NOUVEAU détecté pour l'épisode {ep}")
 
                 except Exception as e:
-                    pass
+                    log(f"❌ Erreur sur l'épisode {ep} : {e}")
 
         except Exception as e:
             log(f"❌ Erreur critique série : {e}")
         finally:
             if hasattr(browser, 'close'):
                 browser.close()
-        log("🎉 Extraction terminée avec succès !")
+        log("🏁 Processus d'extraction terminé.")
